@@ -21,8 +21,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Cors
 const allowedOrigins = [
     'http://localhost:3000',
-    'https://cca7-2c0f-eb68-6bb-c800-6d1e-2859-88d8-5906.ngrok-free.app', // FE ngrok
-    'https://9baf-2c0f-eb68-6bb-c800-6d1e-2859-88d8-5906.ngrok-free.app'  // BE ngrok
+    'https://ingoboka-savings-management-system.onrender.com', // Render ngrok
+    'https://ingoboka-savings-management-system-be.onrender.com'  // Render ngrok
 ];
 
 app.use(cors({
