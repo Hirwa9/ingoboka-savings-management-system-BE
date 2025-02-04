@@ -1,6 +1,6 @@
 import { Sequelize } from "sequelize";
 
-const db = new Sequelize('alain_sm_system', 'root', '', {
+const db = new Sequelize('ingoboka_sm_system', 'root', '', {
     host: "localhost",
     dialect: "mysql"
 });
