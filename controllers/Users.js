@@ -227,7 +227,7 @@ export const Login = async (req, res) => {
 
         res.json({ accessToken, user: { type: user.type, id: user.id } });
     } catch (error) {
-        res.status(500).json({ message: "Login failed" });
+        res.status(500).json({ message: "Login failed. Please try again later", error: error });
     }
 };
 
