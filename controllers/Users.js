@@ -192,10 +192,10 @@ export const Login = async (req, res) => {
             }
         });
 
-        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (!user) return res.status(404).json({ message: 'Invalid credentials. Please try again.' });
 
         const match = await bcrypt.compare(password, user.password);
-        if (!match) return res.status(400).json({ message: "Invalid Username or Password" });
+        if (!match) return res.status(400).json({ message: "Invalid credentials. Please try again." });
 
         const accessToken = jwt.sign(
             { id: user.id, name: user.name, email: user.email },
@@ -423,7 +423,7 @@ export const VerifyUserOTP = async (req, res) => {
     }
 };
 
-// console.log(await bcrypt.hash('alain', 10));
+// console.log('alain: ', await bcrypt.hash('alain', 10));
 
 // Reset Password
 export const ResetUserPassword = async (req, res) => {
