@@ -186,7 +186,7 @@ export const Login = async (req, res) => {
         const user = await User.findOne({
             where: {
                 [Op.or]: [
-                    { email: emailOrUsername },
+                    { husbandEmail: emailOrUsername },
                     { username: emailOrUsername }
                 ]
             }
@@ -423,7 +423,7 @@ export const VerifyUserOTP = async (req, res) => {
     }
 };
 
-// console.log(await bcrypt.hash('password', 10));
+// console.log(await bcrypt.hash('alain', 10));
 
 // Reset Password
 export const ResetUserPassword = async (req, res) => {
