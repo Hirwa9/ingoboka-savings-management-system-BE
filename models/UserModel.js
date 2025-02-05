@@ -29,6 +29,10 @@ const User = db.define('users', {
         unique: true,
         allowNull: false,
     },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false,
+    },
     husbandFirstName: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -78,10 +82,6 @@ const User = db.define('users', {
     wifeAvatar: {
         type: DataTypes.STRING,
         allowNull: true,
-    },
-    password: {
-        type: DataTypes.STRING,
-        allowNull: false,
     },
     shares: {
         type: DataTypes.INTEGER,
