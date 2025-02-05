@@ -21,14 +21,26 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Cors
 const allowedOrigins = [
     'http://localhost:3000',
-    'https://ingoboka-savings-management-system.onrender.com', // Render ngrok
-    'https://ingoboka-savings-management-system-be.onrender.com'  // Render ngrok
+    'https://ingoboka-savings-management-system.onrender.com', // Render FE URL
+    'https://ingoboka-savings-management-system-be.onrender.com'  // Render BE URL
 ];
 
 app.use(cors({
     credentials: true,
-    origin: allowedOrigins
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) === -1) {
+            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+            return callback(new Error(msg), false);
+        }
+        return callback(null, true);
+    }
 }));
+
+// app.use(cors({
+//     credentials: true,
+//     origin: allowedOrigins
+// }));
 
 // app.use((req, res, next) => {
 //     const origin = req.headers.origin;
