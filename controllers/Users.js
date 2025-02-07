@@ -797,6 +797,3 @@ export const clearAllAnnualSharesOnly = async (req, res) => {
         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
     }
 };
-
-
-
