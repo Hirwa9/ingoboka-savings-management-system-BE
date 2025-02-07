@@ -21,7 +21,7 @@ router.post('/users/register', Register);                   // Register a user
 router.post('/login', Login);                               // Login a user
 router.get('/token', refreshToken);                         // Get token
 router.get('/verifyToken', verifyToken);                    // Verify token
-router.delete('/logout', Logout);                           // Logout a user
+router.post('/logout', Logout);                           // Logout a user
 
 // Edit user info
 router.post('/user/:id/edit-husband-photo',
@@ -38,10 +38,10 @@ router.post('/user/:id/edit-wife-info', editWifeInfo);                  // Edit 
 router.post('/user/remove', RemoveMember);                              // Remove a user
 
 // Savings
-router.post('/member/:id/shares', editShares);              // Edit user's shares
-router.post('/member/:id/cotisation', editCotisation);      // Edit user's cotisation amount
-router.post('/member/:id/social', editSocial);              // Edit user's social amount
-router.post('/member/:id/multiple-shares', addMultipleShares);              // Edit user's social amount
+router.post('/member/:id/shares', editShares);                          // Edit user's shares
+router.post('/member/:id/cotisation', editCotisation);                  // Edit user's cotisation amount
+router.post('/member/:id/social', editSocial);                          // Edit user's social amount
+router.post('/member/:id/multiple-shares', addMultipleShares);          // Edit user's social amount
 
 /**
  * Records
