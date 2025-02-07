@@ -88,6 +88,11 @@ const User = db.define('users', {
         allowNull: false,
         defaultValue: 0,
     },
+    progressiveShares: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    },
     annualShares: {
         type: DataTypes.JSON, // To store in JSON format
         allowNull: false,
@@ -105,6 +110,11 @@ const User = db.define('users', {
             { month: 'November', paid: false, hasPenalties: false },
             { month: 'December', paid: false, hasPenalties: false },
         ],
+    },
+    initialInterest: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
     },
     cotisation: {
         type: DataTypes.INTEGER,
