@@ -153,21 +153,34 @@ export const approveCreditRequest = async (req, res) => {
     try {
         // Fetch the credit request
         const credit = await Credits.findByPk(id);
-        if (!credit) return res.status(404).json({ error: 'Credit not found' });
-        if (credit.status === 'approved') return res.status(400).json({ error: 'Credit is already approved' });
+        if (!credit) return res.status(404).json({ error: "Credit not found" });
+        if (credit.status === "approved") return res.status(400).json({ error: "Credit is already approved" });
 
-        // Fetch the figures table (assuming there's only one set of figures)
+        // Fetch figures
         const figures = await Figures.findOne();
-        if (!figures) return res.status(404).json({ error: 'Figures record not found' });
+        if (!figures) return res.status(404).json({ error: "Figures record not found" });
 
-        // Fetch the loan record for the member
+        // Ensure there are enough funds
+        if (figures.balance < credit.creditAmount) {
+            return res.status(400).json({ error: "Insufficient balance to approve this loan" });
+        }
+
+        // Fetch or create the member's loan record
         let loan = await Loan.findOne({ where: { memberId: credit.memberId } });
         if (!loan) {
-            loan = await Loan.create({ memberId: credit.memberId });
+            loan = await Loan.create({
+                memberId: credit.memberId,
+                loanTaken: 0,
+                loanPending: 0,
+                interestTaken: 0,
+                interestPending: 0,
+                tranchesTaken: 0,
+                tranchesPending: 0,
+            });
         }
 
         // Calculate the interest (5% of the requested loan)
-        const interest = credit.creditAmount * 0.05;
+        const interest = parseFloat((credit.creditAmount * 0.05).toFixed(2));
 
         // Update loan details
         loan.loanTaken += credit.creditAmount;
@@ -178,22 +191,23 @@ export const approveCreditRequest = async (req, res) => {
         loan.tranchesPending += credit.tranches;
         await loan.save();
 
-        // Update figures
+        // Deduct from figures
         figures.loanDisbursed += credit.creditAmount;
-        figures.balance -= credit.creditAmount;
+        figures.balance -= credit.creditAmount; // Ensure balance deduction happens
         await figures.save();
 
         // Update credit status
-        credit.status = 'approved';
+        credit.status = "approved";
         credit.rejectionMessage = null;
         await credit.save();
 
         res.status(200).json({
-            message: 'Request is approved successfully. You can follow up with tranche payments.',
-            resData: credit
+            message: "Request approved successfully. You can follow up with tranche payments.",
+            resData: credit,
         });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to approve credit request', details: error.message });
+        console.error("Error approving credit request:", error);
+        res.status(500).json({ error: "Failed to approve credit request", details: error.message });
     }
 };
 
