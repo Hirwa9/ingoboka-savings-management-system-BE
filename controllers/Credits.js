@@ -87,7 +87,7 @@ export const createCredit = async (req, res) => {
             creditPayment: creditPayment || generatedCreditPayment, // Use provided or generated array
         });
 
-        res.status(201).json(newCredit);
+        res.status(201).json({ message: 'Credit request submitted successfully! Your request will be processed accordingly.', newCredit });
     } catch (error) {
         res.status(500).json({ error: 'Failed to create credit', details: error.message });
     }
