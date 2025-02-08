@@ -1,4 +1,5 @@
 import Record from "../models/RecordModel.js";
+import User from "../models/UserModel.js";
 
 // Get all credits
 export const getRecords = async (req, res) => {
@@ -16,7 +17,7 @@ export const addExpense = async (req, res) => {
 
     try {
         // Fetch all active members
-        const members = await Users.findAll();
+        const members = await User.findAll();
         const totalMembers = members.length;
         if (totalMembers === 0) {
             return res.status(400).json({ error: "No members found. Cannot process expense." });
