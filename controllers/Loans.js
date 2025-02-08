@@ -47,53 +47,43 @@ export const editLoanDetails = async (req, res) => {
     }
 };
 
-// Pay loan
+// Pay Loan
 export const payLoan = async (req, res) => {
     const { id } = req.params;
     const { loanToPay, interestToPay, tranchesToPay } = req.body;
 
     try {
-        // Fetch the loan details for the specified member
         const loan = await Loan.findByPk(id);
-        if (!loan) {
-            return res.status(404).json({ error: 'Loan details not found for this member' });
-        }
+        if (!loan) return res.status(404).json({ error: 'Loan details not found' });
 
-        // Calculate updated values for loan
         const updatedLoanPaid = (Number(loan.loanPaid) || 0) + (Number(loanToPay) || 0);
         const updatedLoanPending = (Number(loan.loanPending) || 0) - (Number(loanToPay) || 0);
 
-        // Calculate updated values for interest
         const updatedInterestPaid = (Number(loan.interestPaid) || 0) + (Number(interestToPay) || 0);
         const updatedInterestPending = (Number(loan.interestPending) || 0) - (Number(interestToPay) || 0);
 
-        // Calculate updated values for tranches
         const updatedTranchesPaid = (Number(loan.tranchesPaid) || 0) + (Number(tranchesToPay) || 0);
         const updatedTranchesPending = (Number(loan.tranchesPending) || 0) - (Number(tranchesToPay) || 0);
 
-        // Validate that no pending amount goes negative
         if (updatedLoanPending < 0 || updatedInterestPending < 0 || updatedTranchesPending < 0) {
-            return res.status(400).json({
-                error: 'Payment amounts exceed pending amounts. Please verify the input.',
-            });
+            return res.status(400).json({ error: 'Payment exceeds pending amounts' });
         }
 
-        // Update loan details
-        loan.loanPaid = updatedLoanPaid;
-        loan.loanPending = updatedLoanPending;
+        await loan.update({
+            loanPaid: updatedLoanPaid,
+            loanPending: updatedLoanPending,
+            interestPaid: updatedInterestPaid,
+            interestPending: updatedInterestPending,
+            tranchesPaid: updatedTranchesPaid,
+            tranchesPending: updatedTranchesPending
+        });
 
-        loan.interestPaid = updatedInterestPaid;
-        loan.interestPending = updatedInterestPending;
-
-        loan.tranchesPaid = updatedTranchesPaid;
-        loan.tranchesPending = updatedTranchesPending;
-
-        // Save the updated loan record
-        await loan.save();
+        await Figures.increment('balance', { by: loanToPay });
+        await Figures.increment('paidInterest', { by: interestToPay });
 
         res.status(200).json({ message: 'Loan paid successfully', loan });
     } catch (error) {
-        console.error('Error updating loan details:', error);
+        console.error('Error updating loan:', error);
         res.status(500).json({ message: 'Something went wrong', error: error.message });
     }
 };
