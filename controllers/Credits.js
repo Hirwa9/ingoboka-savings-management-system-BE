@@ -160,8 +160,10 @@ export const approveCreditRequest = async (req, res) => {
         const figures = await Figures.findOne();
         if (!figures) return res.status(404).json({ error: "Figures record not found" });
 
+        const creditAmount = Number(credit.creditAmount);
+
         // Ensure there are enough funds
-        if (figures.balance < credit.creditAmount) {
+        if (Number(figures.balance) < creditAmount) {
             return res.status(400).json({ error: "Insufficient balance to approve this loan" });
         }
 
@@ -180,11 +182,11 @@ export const approveCreditRequest = async (req, res) => {
         }
 
         // Calculate the interest (5% of the requested loan)
-        const interest = parseFloat((credit.creditAmount * 0.05).toFixed(2));
+        const interest = parseFloat((creditAmount * 0.05).toFixed(2));
 
         // Update loan details
-        loan.loanTaken += credit.creditAmount;
-        loan.loanPending += credit.creditAmount;
+        loan.loanTaken += creditAmount;
+        loan.loanPending += creditAmount;
         loan.interestTaken += interest;
         loan.interestPending += interest;
         loan.tranchesTaken += credit.tranches;
@@ -192,8 +194,8 @@ export const approveCreditRequest = async (req, res) => {
         await loan.save();
 
         // Deduct from figures
-        figures.loanDisbursed += credit.creditAmount;
-        figures.balance -= credit.creditAmount; // Ensure balance deduction happens
+        figures.loanDisbursed = Number(figures.loanDisbursed) + creditAmount;
+        figures.balance = Number(figures.balance) - creditAmount; // Ensure balance deduction happens
         await figures.save();
 
         // Update credit status
