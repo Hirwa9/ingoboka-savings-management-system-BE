@@ -266,31 +266,22 @@ export const RemoveMember = async (req, res) => {
         const loan = await Loan.findOne({
             where: {
                 memberId: user.id,
-                loanPending: { [Op.gt]: 0 } // Ensure loanPending is greater than 0
+                loanPending: { [Op.gt]: 0 } 
             }
         });
 
-        const defaultAnnualSharesValue = [
-            { month: 'January', paid: false, hasPenalties: false },
-            { month: 'February', paid: false, hasPenalties: false },
-            { month: 'March', paid: false, hasPenalties: false },
-            { month: 'April', paid: false, hasPenalties: false },
-            { month: 'May', paid: false, hasPenalties: false },
-            { month: 'June', paid: false, hasPenalties: false },
-            { month: 'July', paid: false, hasPenalties: false },
-            { month: 'August', paid: false, hasPenalties: false },
-            { month: 'September', paid: false, hasPenalties: false },
-            { month: 'October', paid: false, hasPenalties: false },
-            { month: 'November', paid: false, hasPenalties: false },
-            { month: 'December', paid: false, hasPenalties: false }
-        ];
+        const defaultAnnualSharesValue = [...Array(12)].map((_, i) => ({
+            month: new Date(0, i).toLocaleString('en', { month: 'long' }),
+            paid: false,
+            hasPenalties: false
+        }));
 
         let responseMessage = "";
+        let retainedBalance = 0;
 
         if (loan) {
             if (totalContributions >= loan.loanPending) {
-                // Clear the loan and retain the remaining balance
-                const remainingBalance = totalContributions - loan.loanPending;
+                retainedBalance = totalContributions - loan.loanPending;
 
                 await loan.update({
                     loanPending: 0,
@@ -301,26 +292,23 @@ export const RemoveMember = async (req, res) => {
                     tranchesPaid: loan.tranchesTaken
                 });
 
-                // Update user status to removed
+                await Figures.increment('balance', { by: retainedBalance });
+
                 await user.update({
                     status: 'removed',
                     shares: 0,
                     annualShares: JSON.stringify(defaultAnnualSharesValue),
-                    cotisation: remainingBalance,
+                    cotisation: 0,
                     social: 0
                 });
 
-                responseMessage = `Member removed successfully. The outstanding loan has been fully settled, and a remaining balance of ${remainingBalance.toLocaleString()} RWF has been retained in the cotisation fund.`;
+                responseMessage = `Member removed successfully. Loan settled. Retained ${retainedBalance.toLocaleString()} RWF in balance.`;
             } else {
-                // Deduct the contribution from the pending loan
-                const newLoanPending = loan.loanPending - totalContributions;
-
                 await loan.update({
-                    loanPending: newLoanPending,
+                    loanPending: loan.loanPending - totalContributions,
                     loanPaid: loan.loanPaid + totalContributions
                 });
 
-                // Update user status to inactive
                 await user.update({
                     status: 'inactive',
                     shares: 0,
@@ -329,10 +317,9 @@ export const RemoveMember = async (req, res) => {
                     social: 0
                 });
 
-                responseMessage = `Member set to inactive. Contributions of ${totalContributions.toLocaleString()} RWF were used to partially settle the outstanding loan. Remaining loan balance is ${newLoanPending} RWF.`;
+                responseMessage = `Member set to inactive. Contributions of ${totalContributions.toLocaleString()} RWF used to settle loan.`;
             }
         } else {
-            // No pending loans, remove the member directly
             await user.update({
                 status: 'removed',
                 shares: 0,
@@ -341,14 +328,13 @@ export const RemoveMember = async (req, res) => {
                 social: 0
             });
 
-            responseMessage = "Member removed successfully. No pending loans were found.";
+            responseMessage = "Member removed successfully. No pending loans found.";
         }
 
         return res.status(200).json({ message: responseMessage });
-
     } catch (error) {
         console.error("Error removing member:", error);
-        res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
+        res.status(500).json({ message: "Something went wrong", error: error.message });
     }
 };
 
