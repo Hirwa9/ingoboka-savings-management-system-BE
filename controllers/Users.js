@@ -292,7 +292,8 @@ export const RemoveMember = async (req, res) => {
                     tranchesPaid: loan.tranchesTaken
                 });
 
-                await Figures.increment('balance', { by: retainedBalance });
+                const figures = await Figures.findOne();
+                await figures.increment('balance', { by: retainedBalance });
 
                 await user.update({
                     status: 'removed',

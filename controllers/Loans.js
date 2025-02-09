@@ -1,3 +1,4 @@
+import Figures from '../models/FiguresModel.js';
 import Loan from '../models/LoanModel.js';
 
 // Get all credits
@@ -78,8 +79,10 @@ export const payLoan = async (req, res) => {
             tranchesPending: updatedTranchesPending
         });
 
-        await Figures.increment('balance', { by: loanToPay });
-        await Figures.increment('paidInterest', { by: interestToPay });
+        const figures = await Figures.findOne();
+
+        await figures.increment('balance', { by: loanToPay });
+        await figures.increment('paidInterest', { by: interestToPay });
 
         res.status(200).json({ message: 'Loan paid successfully', loan });
     } catch (error) {
