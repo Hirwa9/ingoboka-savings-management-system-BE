@@ -678,15 +678,15 @@ export const addMultipleShares = async (req, res) => {
         // If newMember is true, update the user's social column
         if (newMember) {
             user.social = (user.social || 0) + Number(newMemberSocial);
-            await user.save();
-
+            
             // Update the balance in the Figures table
             const figures = await Figures.findOne();
             if (!figures) return res.status(404).json({ error: 'Figures record not found' });
-
+            
             await figures.increment('balance', { by: newMemberInterest });
         }
-
+        await user.save();
+        
         // Create transaction record
         if (progressiveShares && Number(progressiveShares) > 0) {
             await Record.create({
