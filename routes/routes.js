@@ -1,6 +1,6 @@
 import express from "express";
 import upload from "../config/multerConfig.js";
-import { getUsers, Register, Login, Logout, SendUserOPT, VerifyUserOTP, ResetUserPassword, editCotisation, editShares, editSocial, editWifeInfo, editHusbandInfo, editWifePhoto, editHusbandPhoto, clearAllAnnualRecordsWithDistribution, clearAllAnnualSharesOnly, addMultipleShares, RemoveMember } from "../controllers/Users.js";
+import { getUsers, Register, Login, Logout, SendUserOPT, VerifyUserOTP, ResetUserPassword, recordAnnualSavings, editShares, editSocial, editWifeInfo, editHusbandInfo, editWifePhoto, editHusbandPhoto, clearAllAnnualRecordsWithDistribution, clearAllAnnualSharesOnly, addMultipleShares, RemoveMember } from "../controllers/Users.js";
 import { addCreditPenalty, addExpense, getRecords } from "../controllers/Records.js";
 import { verifyToken } from "../middleware/VerifyToken.js";
 import { refreshToken } from "../middleware/RefreshToken.js";
@@ -39,7 +39,7 @@ router.post('/user/remove', RemoveMember);                              // Remov
 
 // Savings
 router.post('/member/:id/shares', editShares);                          // Edit user's shares
-router.post('/member/:id/cotisation', editCotisation);                  // Edit user's cotisation amount
+router.post('/member/:id/cotisation', recordAnnualSavings);                  // Edit user's cotisation amount
 router.post('/member/:id/social', editSocial);                          // Edit user's social amount
 router.post('/member/:id/multiple-shares', addMultipleShares);          // Edit user's social amount
 
