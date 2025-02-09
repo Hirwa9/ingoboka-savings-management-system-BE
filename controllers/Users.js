@@ -279,6 +279,8 @@ export const RemoveMember = async (req, res) => {
         let responseMessage = "";
         let retainedBalance = 0;
 
+        const figures = await Figures.findOne();
+
         if (loan) {
             if (totalContributions >= loan.loanPending) {
                 retainedBalance = totalContributions - loan.loanPending;
@@ -291,8 +293,6 @@ export const RemoveMember = async (req, res) => {
                     tranchesPending: 0,
                     tranchesPaid: loan.tranchesTaken
                 });
-
-                const figures = await Figures.findOne();
                 await figures.increment('balance', { by: retainedBalance });
 
                 await user.update({
@@ -317,6 +317,7 @@ export const RemoveMember = async (req, res) => {
                     cotisation: 0,
                     social: 0
                 });
+                await figures.increment('balance', { by: totalContributions });
 
                 responseMessage = `Member set to inactive. Contributions of ${totalContributions.toLocaleString()} RWF used to settle loan.`;
             }
