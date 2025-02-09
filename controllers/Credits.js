@@ -194,9 +194,8 @@ export const approveCreditRequest = async (req, res) => {
         await loan.save();
 
         // Deduct from figures
-        figures.loanDisbursed = Number(figures.loanDisbursed) + creditAmount;
-        figures.balance = Number(figures.balance) - creditAmount; // Ensure balance deduction happens
-        await figures.save();
+        await figures.increment('loanDisbursed', { by: creditAmount });
+        await figures.decrement('balance', { by: creditAmount });
 
         // Update credit status
         credit.status = "approved";

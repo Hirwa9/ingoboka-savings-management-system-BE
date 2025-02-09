@@ -678,25 +678,25 @@ export const addMultipleShares = async (req, res) => {
         // If newMember is true, update the user's social column
         if (newMember) {
             user.social = (user.social || 0) + Number(newMemberSocial);
+            await user.save();
+
+            // Update the balance in the Figures table
+            const figures = await Figures.findOne();
+            if (!figures) return res.status(404).json({ error: 'Figures record not found' });
+
+            await figures.increment('balance', { by: newMemberInterest });
         }
 
-        await user.save();
-
-        // Update the balance in the Figures table
-        const figures = await Figures.findOne(); // Assuming there's only one record
-        if (!figures) return res.status(404).json({ error: 'Figures record not found' });
-
-        figures.balance += Number(newMemberInterest);
-        await figures.save();
-
         // Create transaction record
-        await Record.create({
-            memberId: id,
-            recordType: 'deposit',
-            recordSecondaryType: 'Multiple shares record',
-            recordAmount: (progressiveShares * 20000),
-            comment,
-        });
+        if (progressiveShares && Number(progressiveShares) > 0) {
+            await Record.create({
+                memberId: id,
+                recordType: 'deposit',
+                recordSecondaryType: 'Multiple shares record',
+                recordAmount: (progressiveShares * 20000),
+                comment,
+            });
+        }
 
         // Send email notification
         const emailContent = `
