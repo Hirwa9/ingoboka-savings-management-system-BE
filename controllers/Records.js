@@ -1,3 +1,4 @@
+import Figures from "../models/FiguresModel.js";
 import Record from "../models/RecordModel.js";
 import User from "../models/UserModel.js";
 
@@ -89,6 +90,12 @@ export const addCreditPenalty = async (req, res) => {
             recordSecondaryType: secondaryType,
             recordAmount: penaltyAmount,
             comment,
+        });
+        
+        const figures = await Figures.findOne();
+
+        await figures.increment({
+            penalties: penaltyAmount,
         });
 
         res.status(200).json({ message: "Penalty applied successfully." });
