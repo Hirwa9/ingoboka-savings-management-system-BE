@@ -1,6 +1,6 @@
 import express from "express";
 import upload from "../config/multerConfig.js";
-import { getUsers, Register, Login, Logout, SendUserOPT, VerifyUserOTP, ResetUserPassword, recordAnnualSavings, editShares, editSocial, editWifeInfo, editHusbandInfo, editWifePhoto, editHusbandPhoto, clearAllAnnualRecordsWithDistribution, clearAllAnnualSharesOnly, addMultipleShares, RemoveMember } from "../controllers/Users.js";
+import { getUsers, Register, Login, Logout, SendUserOPT, VerifyUserOTP, ResetUserPassword, recordAnnualSavings, editShares, editSocial, editWifeInfo, editHusbandInfo, editWifePhoto, editHusbandPhoto, distributeAnnualInterest, withdrawAnnualInterest, addMultipleShares, RemoveMember } from "../controllers/Users.js";
 import { addCreditPenalty, addExpense, getRecords } from "../controllers/Records.js";
 import { verifyToken } from "../middleware/VerifyToken.js";
 import { refreshToken } from "../middleware/RefreshToken.js";
@@ -61,8 +61,8 @@ router.patch('/credit/:id/reject', updateCreditStatus);     // Reject a credit
 router.patch('/credit/:id/restore', updateCreditStatus);    // Restore a rejected credit
 router.patch('/credit/:id/approve', approveCreditRequest);    // Approve a rejected credit
 router.delete('/credit/:id/delete', deleteCredit);          // Delete a credit (Rarely used for records integrity)
-router.post('/api/distribute-interest', clearAllAnnualRecordsWithDistribution);
-router.post('/api/withdraw-interest', clearAllAnnualSharesOnly);
+router.post('/api/distribute-interest', distributeAnnualInterest);
+router.post('/api/withdraw-interest', withdrawAnnualInterest);
 
 /**
  * Annual interest routes
