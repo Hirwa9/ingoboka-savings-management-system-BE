@@ -671,22 +671,24 @@ export const addMultipleShares = async (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         // Update user's progressiveShares, shares, and cotisation
-        user.progressiveShares += Number(progressiveShares);
+        if (!newMember) {
+            user.progressiveShares += Number(progressiveShares);
+        }
         user.shares += Number(progressiveShares);
         user.cotisation += (progressiveShares * 20000);
 
         // If newMember is true, update the user's social column
         if (newMember) {
             user.social = (user.social || 0) + Number(newMemberSocial);
-            
+
             // Update the balance in the Figures table
             const figures = await Figures.findOne();
             if (!figures) return res.status(404).json({ error: 'Figures record not found' });
-            
+
             await figures.increment('balance', { by: newMemberInterest });
         }
         await user.save();
-        
+
         // Create transaction record
         if (progressiveShares && Number(progressiveShares) > 0) {
             await Record.create({
@@ -719,13 +721,14 @@ export const addMultipleShares = async (req, res) => {
 };
 
 // Interest distribution
-export const clearAllAnnualRecordsWithDistribution = async (req, res) => {
+export const distributeAnnualInterest = async (req, res) => {
     try {
         const users = await User.findAll();
         if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
 
         const { annualReceivable } = req.body;
-        const figures = await Figures.findOne(); // Assuming Figures table has a single row
+        const figures = await Figures.findOne();
+
         const totalReceivable = annualReceivable + users.reduce((sum, item) => sum + item.initialInterest, 0);
         let totalDistributionShares = 0;
         let totalDistributedAmount = 0;
@@ -763,7 +766,7 @@ export const clearAllAnnualRecordsWithDistribution = async (req, res) => {
         }
 
         // Step 3: Distribute totalReceivable
-        for (const { user, paidSharesCount, progressiveSharesCount, totalShares } of userSharesMap) {
+        for (const { user, totalShares } of userSharesMap) {
             const sharesProportion = totalShares / totalDistributionShares;
             const distributedAmount = sharesProportion * totalReceivable;
 
@@ -785,7 +788,7 @@ export const clearAllAnnualRecordsWithDistribution = async (req, res) => {
 
 
         res.status(200).json({
-            message: "Annual records cleared, and funds distributed with initial interest tracking.",
+            message: `Annual records cleared, and total interest of ${totalDistributedAmount.toLocaleString()} RWF is distributed into cotisations with initial interest tracking.`,
         });
     } catch (error) {
         console.error("Error clearing annual records with distribution:", error);
@@ -794,24 +797,26 @@ export const clearAllAnnualRecordsWithDistribution = async (req, res) => {
 };
 
 // Interest withdraw
-export const clearAllAnnualSharesOnly = async (req, res) => {
+export const withdrawAnnualInterest = async (req, res) => {
     try {
         const users = await User.findAll();
         if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
 
         const { annualReceivable } = req.body;
-        const figures = await Figures.findOne(); // Assuming Figures table has a single row
+        const figures = await Figures.findOne();
+
         const totalReceivable = annualReceivable + users.reduce((sum, item) => sum + item.initialInterest, 0);
-        let totalShares = 0;
+        let totalDistributionShares = 0;
         let totalDistributedAmount = 0;
 
         // Step 1: Compute total shares before resetting annualShares
         const userSharesMap = users.map((user) => {
             const annualShares = JSON.parse(user.annualShares) || [];
+            const progressiveSharesCount = user.progressiveShares;
             const paidSharesCount = annualShares.filter((month) => month.paid).length;
-            const totalUserShares = user.shares + paidSharesCount; // Includes paid annualShares
+            const totalUserShares = progressiveSharesCount + paidSharesCount; // Includes paid annualShares
 
-            totalShares += totalUserShares; // Add to total
+            totalDistributionShares += totalUserShares; // Add to total
 
             return { user, annualShares, totalUserShares };
         });
@@ -832,7 +837,7 @@ export const clearAllAnnualSharesOnly = async (req, res) => {
 
         // Step 3: Distribute totalReceivable among users
         for (const { user, totalUserShares } of userSharesMap) {
-            const shareProportion = totalUserShares / totalShares;
+            const shareProportion = totalUserShares / totalDistributionShares;
             const distributedAmount = shareProportion * totalReceivable;
 
             // Extract maximum multiples of 20,000
@@ -846,11 +851,12 @@ export const clearAllAnnualSharesOnly = async (req, res) => {
             await user.save();
         }
 
-        // Step 4: Increment distributedInterest in Figures
+        // Step 4: Increment distributedInterest in Figures and withdraw interest from balance
         await figures.increment('distributedInterest', { by: Number(totalDistributedAmount) });
+        await figures.decrement('balance', { by: Number(totalDistributedAmount) });
 
         res.status(200).json({
-            message: "Annual shares cleared, and interest distributed with withdrawal records.",
+            message: `Annual shares cleared, and total interest of ${totalDistributedAmount.toLocaleString()} RWF is withdrawn, with initial interest tracking.`,
         });
     } catch (error) {
         console.error("Error clearing annual shares for all users:", error);
