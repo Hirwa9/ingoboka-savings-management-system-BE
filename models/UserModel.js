@@ -112,7 +112,7 @@ const User = db.define('users', {
         ],
     },
     initialInterest: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0,
     },
@@ -122,7 +122,7 @@ const User = db.define('users', {
         defaultValue: 0,
     },
     social: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
         defaultValue: 0,
     },
