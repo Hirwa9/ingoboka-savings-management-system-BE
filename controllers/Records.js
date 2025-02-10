@@ -53,7 +53,7 @@ export const addExpense = async (req, res) => {
                 if (member.initialInterest >= remainingDeduction) {
                     member.initialInterest -= remainingDeduction;
                 } else {
-                    return res.status(500).json({ error: `Failed to deduct for member ID: ${member.id}. Insufficient funds.` });
+                    return res.status(500).json({ error: `Failed to deduct ${deductionPerMember.toLocaleString()} RWF expenses for member ${member.username}. Insufficient funds.` });
                 }
             }
 
