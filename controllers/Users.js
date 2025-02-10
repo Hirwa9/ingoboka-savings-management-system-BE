@@ -258,7 +258,9 @@ export const RemoveMember = async (req, res) => {
 
     try {
         const user = await User.findOne({ where: { husbandEmail: email } });
+        const figures = await Figures.findOne();
         if (!user) return res.status(404).json({ message: 'User not found' });
+        if (!figures) return res.status(404).json({ error: 'Figures record not found' });
 
         const { cotisation, social } = user;
         const totalContributions = cotisation + social;
@@ -278,8 +280,6 @@ export const RemoveMember = async (req, res) => {
 
         let responseMessage = "";
         let retainedBalance = 0;
-
-        const figures = await Figures.findOne();
 
         if (loan) {
             if (totalContributions >= loan.loanPending) {
@@ -563,8 +563,8 @@ export const recordAnnualSavings = async (req, res) => {
     try {
         const user = await User.findByPk(id);
         const figures = await Figures.findOne();
-
         if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!figures) return res.status(404).json({ error: 'Figures record not found' });
 
         // Parse and update the user's annualShares
         let annualShares = JSON.parse(user.annualShares) || [];
@@ -596,7 +596,7 @@ export const recordAnnualSavings = async (req, res) => {
         user.shares += savings.length; // Add new shares to the total shares
         await user.save();
 
-        await figures.increment('balance', { by: totalSavingAmount });
+        await figures.increment({ balance: Number(totalSavingAmount) });
 
         // Create transaction record in the records table
         await Record.create({
@@ -741,8 +741,8 @@ export const addMultipleShares = async (req, res) => {
 export const distributeAnnualInterest = async (req, res) => {
     try {
         const users = await User.findAll();
-        if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
         const figures = await Figures.findOne();
+        if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
 
         const { annualReceivable } = req.body;
