@@ -77,13 +77,13 @@ export const addExpense = async (req, res) => {
     }
 };
 
-
-// Add penalty record
+// Add penalty record and distribute among users
 export const addCreditPenalty = async (req, res) => {
     const { id } = req.params;
     const { secondaryType, penaltyAmount, comment } = req.body;
 
     try {
+        // Add penalty record
         await Record.create({
             memberId: id,
             recordType: 'penalty',
@@ -91,16 +91,32 @@ export const addCreditPenalty = async (req, res) => {
             recordAmount: penaltyAmount,
             comment,
         });
-        
-        const figures = await Figures.findOne();
 
+        // Update Figures (penalties + balance)
+        const figures = await Figures.findOne();
         await figures.increment({
             penalties: penaltyAmount,
+            balance: penaltyAmount,
         });
 
-        res.status(200).json({ message: "Penalty applied successfully." });
+        // Fetch all users
+        const users = await User.findAll();
+        const totalUsers = users.length;
+
+        if (totalUsers > 0) {
+            // Compute the exact share per user
+            const individualPenalty = penaltyAmount / totalUsers;
+
+            // Distribute penalty among all users
+            await Promise.all(users.map(user => {
+                return user.increment('initialInterest', { by: individualPenalty });
+            }));
+        }
+
+        res.status(200).json({ message: "Penalty applied and distributed successfully." });
     } catch (error) {
-        console.error("Error recording the expense:", error);
+        console.error("Error applying penalty:", error);
         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
     }
 };
+
