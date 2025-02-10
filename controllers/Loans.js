@@ -82,7 +82,7 @@ export const payLoan = async (req, res) => {
         const figures = await Figures.findOne();
 
         await figures.increment({
-            balance: loanToPay,
+            balance: Number(loanToPay) + Number(interestToPay),
             paidInterest: interestToPay,
             paidCapital: loanToPay
         });
