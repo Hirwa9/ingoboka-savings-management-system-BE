@@ -7,6 +7,7 @@ import sendEmail from "../utils/sendEmail.js";  // Nodemailer sendEmail utility
 import { generateStrongPassword } from "../utils/generateStrongPassword.js";
 import { Op } from "sequelize";
 import Figures from "../models/FiguresModel.js";
+import db from "../config/Database.js";
 
 export const getUsers = async (req, res) => {
     try {
@@ -619,7 +620,7 @@ export const recordAnnualSavings = async (req, res) => {
         // await sendEmail(user.email, 'Ingoboka Cotisation Amount Update', '', emailContent);
         // await sendEmail('hirwawilly9@gmail.com', 'Ingoboka Cotisation Amount Update', '', emailContent);
 
-        res.status(200).json({ message: "Savings updated successfully." });
+        res.status(200).json({ message: `Savings updated successfully for ${user.username}.` });
     } catch (error) {
         console.error("Error updating cotisation:", error);
         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
@@ -682,6 +683,9 @@ export const addMultipleShares = async (req, res) => {
 
         const shareMultiples = progressiveShares * 20000;
 
+        console.log('______progressiveShares: ', progressiveShares);
+        console.log('______shareMultiples: ', shareMultiples);
+
         user.shares += Number(progressiveShares);
         user.cotisation += shareMultiples;
 
@@ -693,13 +697,12 @@ export const addMultipleShares = async (req, res) => {
         // If updating a new member, update the user's social column 
         // and initial interest (if any)
         if (newMember) {
-            const updatedSocialAmount = (user.social || 0) + Number(newMemberSocial);
-            user.social = updatedSocialAmount;
+            user.social += Number(newMemberSocial);
             user.initialInterest += Number(newMemberInterest);
 
             // Update the balance in the Figures table
             await figures.increment({
-                balance: updatedSocialAmount + Number(newMemberInterest)
+                balance: (Number(newMemberSocial) + Number(newMemberInterest))
             });
         }
 
@@ -738,6 +741,7 @@ export const addMultipleShares = async (req, res) => {
 };
 
 // Interest distribution
+
 export const distributeAnnualInterest = async (req, res) => {
     try {
         const users = await User.findAll();
@@ -746,70 +750,51 @@ export const distributeAnnualInterest = async (req, res) => {
         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
 
         const { annualReceivable } = req.body;
+        const totalActiveShares = users.reduce((sum, item) => {
+            const progressiveShares = item.progressiveShares;
+            const paidAnnualShares = JSON.parse(item.annualShares).filter(share => share.paid).length;
+            return sum + progressiveShares + paidAnnualShares;
+        }, 0);
 
-        const totalReceivable = annualReceivable + users.reduce((sum, item) => sum + item.initialInterest, 0);
-        let totalDistributionShares = 0;
         let totalDistributedAmount = 0;
 
-        // Step 1: Compute total shares before resetting
-        const userSharesMap = users.map((user) => {
-            const annualShares = JSON.parse(user.annualShares) || [];
-            const progressiveSharesCount = user.progressiveShares;
-            const paidSharesCount = annualShares.filter((month) => month.paid).length;
-            const totalShares = user.progressiveShares + paidSharesCount; // Includes paid annualShares
+        // Process each user
+        for (const user of users) {
+            const progressiveShares = user.progressiveShares;
+            const paidAnnualShares = JSON.parse(user.annualShares).filter(share => share.paid).length;
+            const activeShares = progressiveShares + paidAnnualShares;
+            const sharesProportion = totalActiveShares > 0 ? activeShares / totalActiveShares : 0;
 
-            totalDistributionShares += totalShares; // Add to total
+            // Compute interest
+            const activeInterest = sharesProportion * annualReceivable;
+            const totalInterest = activeInterest + Number(user.initialInterest);
 
-            return {
-                user,
-                totalShares,
-                paidSharesCount,
-                progressiveSharesCount,
-                annualShares,
-            };
-        });
+            // Extract multiple shares amount
+            const interestReceivable = Math.floor(totalInterest / 20000) * 20000;
+            const sharesReceivable = interestReceivable / 20000;
+            const interestRemains = totalInterest - interestReceivable;
 
-        // Step 2: Reset progressiveShares and annual shares
-        for (const { user, paidSharesCount, annualShares } of userSharesMap) {
-            user.progressiveShares = 0; // Reset progressiveShares
-
-            // Reset annualShares for next year
-            user.annualShares = annualShares.map((month) => ({
-                ...month,
-                paid: false,
-                hasPenalties: false,
-            }));
+            // Update user shares and interest
+            user.shares += sharesReceivable;
+            user.cotisation += interestReceivable;
+            user.initialInterest = interestRemains;
+            user.progressiveShares = 0; // Reset progressiveShares for the new year
+            user.annualShares = JSON.parse(user.annualShares)
+                .map(share => ({ ...share, paid: false, hasPenalties: false }))
 
             await user.save();
+
+            totalDistributedAmount += interestReceivable;
         }
 
-        // Step 3: Distribute totalReceivable
-        for (const { user, totalShares } of userSharesMap) {
-            const sharesProportion = totalShares / totalDistributionShares;
-            const distributedAmount = sharesProportion * totalReceivable;
-
-            // Extract maximum multiples of 20,000
-            const multiplesOf20K = Math.floor(distributedAmount / 20000) * 20000;
-            const remainingInterest = distributedAmount - multiplesOf20K;
-
-            // Store in cotisation and initialInterest
-            user.shares += multiplesOf20K / 20000;
-            user.cotisation += multiplesOf20K;
-            user.initialInterest += remainingInterest;
-
-            totalDistributedAmount += multiplesOf20K; // Track total distributed amount
-            await user.save();
-        }
-
-        // Step 4: Increment distributedInterest in Figures
+        // Update Figures record
         await figures.increment('distributedInterest', { by: Number(totalDistributedAmount) });
 
-
         res.status(200).json({
-            message: `Annual records cleared, and total interest of ${totalDistributedAmount.toLocaleString()} RWF is distributed into cotisations with initial interest tracking.`,
+            message: `Annual distribution completed. Total distributed: ${totalDistributedAmount.toLocaleString()} RWF.`,
         });
     } catch (error) {
-        console.error("Error clearing annual records with distribution:", error);
+        console.error("Error in annual interest distribution:", error);
         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
     }
 };
@@ -823,71 +808,46 @@ export const withdrawAnnualInterest = async (req, res) => {
         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
 
         const { annualReceivable } = req.body;
+        const totalActiveShares = users.reduce((sum, item) => {
+            const progressiveShares = item.progressiveShares;
+            const paidAnnualShares = JSON.parse(item.annualShares).filter(share => share.paid).length;
+            return sum + progressiveShares + paidAnnualShares;
+        }, 0);
 
-        const totalReceivable = annualReceivable + users.reduce((sum, item) => sum + item.initialInterest, 0);
-        let totalDistributionShares = 0;
-        let totalDistributedAmount = 0;
+        let totalWithdrawnAmount = 0;
 
-        // Step 1: Compute total shares before resetting annualShares
-        const userSharesMap = users.map((user) => {
-            const annualShares = JSON.parse(user.annualShares) || [];
-            const progressiveSharesCount = user.progressiveShares;
-            const paidSharesCount = annualShares.filter((month) => month.paid).length;
-            const totalUserShares = progressiveSharesCount + paidSharesCount; // Includes paid annualShares
+        // Process each user
+        for (const user of users) {
+            const progressiveShares = user.progressiveShares;
+            const paidAnnualShares = JSON.parse(user.annualShares).filter(share => share.paid).length;
+            const activeShares = progressiveShares + paidAnnualShares;
+            const sharesProportion = totalActiveShares > 0 ? activeShares / totalActiveShares : 0;
 
-            totalDistributionShares += totalUserShares; // Add to total
+            // Compute interest
+            const activeInterest = sharesProportion * annualReceivable;
+            const totalInterest = activeInterest + Number(user.initialInterest);
 
-            return { user, annualShares, totalUserShares };
-        });
+            // Extract multiple shares amount
+            const interestReceivable = Math.floor(totalInterest / 20000) * 20000;
+            const interestRemains = totalInterest - interestReceivable;
 
-        // Step 2: Reset progressiveShares and annual shares
-        for (const { user, paidSharesCount, annualShares } of userSharesMap) {
-            user.progressiveShares = 0; // Reset progressiveShares
-
-            // Reset annualShares for next year
-            user.annualShares = annualShares.map((month) => ({
-                ...month,
-                paid: false,
-                hasPenalties: false,
-            }));
-
+            // Update user interest only (shares and cotisation remain unchanged)
+            user.initialInterest = interestRemains;
+            user.progressiveShares = 0; // Reset progressiveShares for the new year
+            user.annualShares = JSON.parse(user.annualShares)
+                .map(share => ({ ...share, paid: false, hasPenalties: false }));
             await user.save();
+
+            totalWithdrawnAmount += interestReceivable;
         }
 
-        // Step 3: Distribute totalReceivable among users
-        for (const { user, totalUserShares } of userSharesMap) {
-            const shareProportion = totalUserShares / totalDistributionShares;
-            const distributedAmount = shareProportion * totalReceivable;
+        // Deduct total withdrawn amount from balance
+        await figures.decrement('balance', { by: Number(totalWithdrawnAmount) });
+        await figures.increment('distributedInterest', { by: Number(totalWithdrawnAmount) });
 
-            // Extract maximum multiples of 20,000
-            const multiplesOf20K = Math.floor(distributedAmount / 20000) * 20000;
-            const remainingInterest = distributedAmount - multiplesOf20K;
-
-            // Store the remaining amount in initialInterest
-            user.initialInterest += remainingInterest;
-
-            totalDistributedAmount += multiplesOf20K; // Track total distributed amount
-            await user.save();
-        }
-
-        // Step 4: Increment distributedInterest in Figures and withdraw interest from balance
-        await db.transaction(async (t) => {
-            await figures.increment('distributedInterest', {
-                by: Number(totalDistributedAmount),
-                transaction: t
-            });
-
-            await figures.decrement('balance', {
-                by: Number(totalDistributedAmount),
-                transaction: t
-            });
-        });
-
-        res.status(200).json({
-            message: `Annual shares cleared, and total interest of ${totalDistributedAmount.toLocaleString()} RWF is withdrawn, with initial interest tracking.`,
-        });
+        res.status(200).json({ message: 'Annual interest withdrawn successfully', totalWithdrawnAmount });
     } catch (error) {
-        console.error("Error clearing annual shares for all users:", error);
-        res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };
