@@ -81,9 +81,11 @@ export const payLoan = async (req, res) => {
 
         const figures = await Figures.findOne();
 
-        await figures.increment('balance', { by: loanToPay });
-        await figures.increment('paidInterest', { by: interestToPay });
-        await figures.increment('paidCapital', { by: loanToPay });
+        await figures.increment({
+            balance: loanToPay,
+            paidInterest: interestToPay,
+            paidCapital: loanToPay
+        });
 
         res.status(200).json({ message: 'Loan paid successfully', loan });
     } catch (error) {
