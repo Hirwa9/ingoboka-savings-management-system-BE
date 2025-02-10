@@ -562,6 +562,8 @@ export const recordAnnualSavings = async (req, res) => {
 
     try {
         const user = await User.findByPk(id);
+        const figures = await Figures.findOne();
+
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         // Parse and update the user's annualShares
@@ -593,6 +595,8 @@ export const recordAnnualSavings = async (req, res) => {
         user.annualShares = annualShares; // Save the updated JSON object
         user.shares += savings.length; // Add new shares to the total shares
         await user.save();
+
+        await figures.increment('balance', { by: totalSavingAmount });
 
         // Create transaction record in the records table
         await Record.create({
@@ -629,11 +633,15 @@ export const editSocial = async (req, res) => {
 
     try {
         const user = await User.findByPk(id);
+        const figures = await Figures.findOne();
         if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!figures) return res.status(404).json({ error: 'Figures record not found' });
 
         // Update user's social amount
         user.social = Number(user.social) + Number(savingAmount);
         await user.save();
+
+        await figures.increment('balance', { by: Number(savingAmount) });
 
         // Create transaction record in the records table
         await Record.create({
@@ -668,34 +676,43 @@ export const addMultipleShares = async (req, res) => {
 
     try {
         const user = await User.findByPk(id);
+        const figures = await Figures.findOne();
         if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!figures) return res.status(404).json({ error: 'Figures record not found' });
+
+        const shareMultiples = progressiveShares * 20000;
+
+        user.shares += Number(progressiveShares);
+        user.cotisation += shareMultiples;
 
         // Update user's progressiveShares, shares, and cotisation
         if (!newMember) {
             user.progressiveShares += Number(progressiveShares);
         }
-        user.shares += Number(progressiveShares);
-        user.cotisation += (progressiveShares * 20000);
 
-        // If newMember is true, update the user's social column
+        // If updating a new member, update the user's social column 
+        // and initial interest (if any)
         if (newMember) {
-            user.social = (user.social || 0) + Number(newMemberSocial);
+            const updatedSocialAmount = (user.social || 0) + Number(newMemberSocial);
+            user.social = updatedSocialAmount;
+            user.initialInterest += Number(newMemberInterest);
 
             // Update the balance in the Figures table
-            const figures = await Figures.findOne();
-            if (!figures) return res.status(404).json({ error: 'Figures record not found' });
-
-            await figures.increment('balance', { by: newMemberInterest });
+            await figures.increment({
+                balance: updatedSocialAmount + Number(newMemberInterest)
+            });
         }
+
         await user.save();
+        await figures.increment({ balance: shareMultiples });
 
         // Create transaction record
-        if (progressiveShares && Number(progressiveShares) > 0) {
+        if (progressiveShares && progressiveShares > 0) {
             await Record.create({
                 memberId: id,
                 recordType: 'deposit',
                 recordSecondaryType: 'Multiple shares record',
-                recordAmount: (progressiveShares * 20000),
+                recordAmount: shareMultiples,
                 comment,
             });
         }
@@ -725,9 +742,10 @@ export const distributeAnnualInterest = async (req, res) => {
     try {
         const users = await User.findAll();
         if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
+        const figures = await Figures.findOne();
+        if (!figures) return res.status(404).json({ error: 'Figures record not found' });
 
         const { annualReceivable } = req.body;
-        const figures = await Figures.findOne();
 
         const totalReceivable = annualReceivable + users.reduce((sum, item) => sum + item.initialInterest, 0);
         let totalDistributionShares = 0;
@@ -800,10 +818,11 @@ export const distributeAnnualInterest = async (req, res) => {
 export const withdrawAnnualInterest = async (req, res) => {
     try {
         const users = await User.findAll();
+        const figures = await Figures.findOne();
         if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
+        if (!figures) return res.status(404).json({ error: 'Figures record not found' });
 
         const { annualReceivable } = req.body;
-        const figures = await Figures.findOne();
 
         const totalReceivable = annualReceivable + users.reduce((sum, item) => sum + item.initialInterest, 0);
         let totalDistributionShares = 0;
@@ -852,8 +871,17 @@ export const withdrawAnnualInterest = async (req, res) => {
         }
 
         // Step 4: Increment distributedInterest in Figures and withdraw interest from balance
-        await figures.increment('distributedInterest', { by: Number(totalDistributedAmount) });
-        await figures.decrement('balance', { by: Number(totalDistributedAmount) });
+        await db.transaction(async (t) => {
+            await figures.increment('distributedInterest', {
+                by: Number(totalDistributedAmount),
+                transaction: t
+            });
+
+            await figures.decrement('balance', {
+                by: Number(totalDistributedAmount),
+                transaction: t
+            });
+        });
 
         res.status(200).json({
             message: `Annual shares cleared, and total interest of ${totalDistributedAmount.toLocaleString()} RWF is withdrawn, with initial interest tracking.`,
