@@ -42,11 +42,11 @@ export const addExpense = async (req, res) => {
             let remainingDeduction = deductionPerMember;
 
             // Deduct from social first
-            if (member.social >= remainingDeduction) {
-                member.social -= remainingDeduction;
+            if (Number(member.social) >= remainingDeduction) {
+                member.social = Number(member.social) - remainingDeduction;
             } else {
                 // Deduct what's available in social
-                remainingDeduction -= member.social;
+                remainingDeduction -= Number(member.social);
                 member.social = 0;
 
                 // Deduct the rest from initialInterest
