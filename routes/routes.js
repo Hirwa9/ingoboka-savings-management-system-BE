@@ -9,6 +9,7 @@ import { createLoanEntry, editLoanDetails, getLoans, payLoan } from "../controll
 import { getSystemSettings, saveCreditSettings, saveExpenseTypes, saveRoles, saveSavingsSettings, saveShareSettings, saveSystemSettings } from "../controllers/Settings.js";
 import { getAnnualInterestRecords } from "../controllers/AnnualInterests.js";
 import { getBalance, getFigureById, getFigures, getLoanDelivered, getPaidCapital, getPenalties, resetFigures, updateFigure, updateSingleColumn } from "../controllers/Figures.js";
+import { backupDatabase } from "../config/Database.js";
 
 const router = express.Router();
 
@@ -98,12 +99,14 @@ router.patch("/figures/:id/update", updateSingleColumn);            // Update a 
  * Settings routes
  */
 
-router.get('/api/settings', getSystemSettings);        // Save system settings
+router.get('/api/settings', getSystemSettings);                 // Save system settings
 router.post('/api/settings/system', saveSystemSettings);        // Save system settings
 router.post('/api/settings/roles', saveRoles);                  // Save roles
 router.post('/api/settings/credits', saveCreditSettings);       // Save credit settings
 router.post('/api/settings/shares', saveShareSettings);         // Save share settings
 router.post('/api/settings/expenses', saveExpenseTypes);        // Save expense types
 router.post('/api/settings/savings', saveSavingsSettings);      // Save savings settings
+
+router.post('/api/database/backup', backupDatabase);            // Backup the database
 
 export default router;
