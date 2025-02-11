@@ -697,8 +697,8 @@ export const addMultipleShares = async (req, res) => {
         // If updating a new member, update the user's social column 
         // and initial interest (if any)
         if (newMember) {
-            user.social += Number(newMemberSocial);
-            user.initialInterest += Number(newMemberInterest);
+            user.social = Number(user.social) + Number(newMemberSocial);
+            user.initialInterest = Number(newMemberInterest);
 
             // Update the balance in the Figures table
             await figures.increment({
