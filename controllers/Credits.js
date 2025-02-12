@@ -66,13 +66,14 @@ export const createCredit = async (req, res) => {
         let generatedCreditPayment = [];
         if (!creditPayment || creditPayment.length === 0) {
             const trancheDueDates = calculateTrancheDueDates(requestDate, tranches);
-
+            let interestPercentage = 0.05;
             generatedCreditPayment = trancheDueDates.map((date, index) => ({
                 tranchNumber: index + 1,
                 tranchDueDate: date,
-                paid: false, // Default is false
-                slipUrl: null, // Default is null
-                finesCount: 0, // Default is 0
+                tranchAmount: (creditAmount * (1 + interestPercentage)) / tranches,
+                paid: false,
+                slipUrl: null,
+                finesCount: 0,
             }));
         }
 
