@@ -683,9 +683,6 @@ export const addMultipleShares = async (req, res) => {
 
         const shareMultiples = progressiveShares * 20000;
 
-        console.log('______progressiveShares: ', progressiveShares);
-        console.log('______shareMultiples: ', shareMultiples);
-
         user.shares += Number(progressiveShares);
         user.cotisation += shareMultiples;
 
@@ -741,46 +738,53 @@ export const addMultipleShares = async (req, res) => {
 };
 
 // Interest distribution
-
 export const distributeAnnualInterest = async (req, res) => {
     try {
         const users = await User.findAll();
         const figures = await Figures.findOne();
+        const loans = await Loan.findAll();
         if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
-        if (!figures) return res.status(404).json({ error: 'Figures record not found' });
+        if (!figures) return res.status(404).json({ error: 'Figures records not found. They are essential for this to go through.' });
+        if (!loans) return res.status(404).json({ error: 'Credit records not found. They are essential for this to go through.' });
 
-        const { annualReceivable } = req.body;
         const totalActiveShares = users.reduce((sum, item) => {
             const progressiveShares = item.progressiveShares;
             const paidAnnualShares = JSON.parse(item.annualShares).filter(share => share.paid).length;
             return sum + progressiveShares + paidAnnualShares;
         }, 0);
 
+        const totalPaidInterest = loans.reduce((sum, loan) => sum + Number(loan.interestPaid), 0);
+        const currentPeriodPaidInterest = totalPaidInterest
+            - users.reduce((sum, m) => sum + Number(m.distributedInterestPaid), 0);
+
         let totalDistributedAmount = 0;
 
         // Process each user
         for (const user of users) {
+            const userLoan = loans.find(ln => ln.memberId === user.id);
+            if (!userLoan) res.status(404).json({ error: `Could not find ${user.username}'s loan status to determine their paid interest` });
+
             const progressiveShares = user.progressiveShares;
             const paidAnnualShares = JSON.parse(user.annualShares).filter(share => share.paid).length;
             const activeShares = progressiveShares + paidAnnualShares;
             const sharesProportion = totalActiveShares > 0 ? activeShares / totalActiveShares : 0;
 
             // Compute interest
-            const activeInterest = sharesProportion * annualReceivable;
-            const totalInterest = activeInterest + Number(user.initialInterest);
+            const totalInterest = (currentPeriodPaidInterest * sharesProportion) + Number(user.initialInterest);
 
-            // Extract multiple shares amount
+            // Extract multiple shares and interest amounts
             const interestReceivable = Math.floor(totalInterest / 20000) * 20000;
             const sharesReceivable = interestReceivable / 20000;
             const interestRemains = totalInterest - interestReceivable;
 
-            // Update user shares and interest
+            // Update user
             user.shares += sharesReceivable;
             user.cotisation += interestReceivable;
             user.initialInterest = interestRemains;
             user.progressiveShares = 0; // Reset progressiveShares for the new year
+            user.distributedInterestPaid = userLoan.interestPaid || 0;
             user.annualShares = JSON.parse(user.annualShares)
-                .map(share => ({ ...share, paid: false, hasPenalties: false }))
+                .map(share => ({ ...share, paid: false, hasPenalties: false }));
 
             await user.save();
 
@@ -804,38 +808,47 @@ export const withdrawAnnualInterest = async (req, res) => {
     try {
         const users = await User.findAll();
         const figures = await Figures.findOne();
+        const loans = await Loan.findAll();
         if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
-        if (!figures) return res.status(404).json({ error: 'Figures record not found' });
+        if (!figures) return res.status(404).json({ error: 'Figures records not found. They are essential for this to go through.' });
+        if (!loans) return res.status(404).json({ error: 'Credit records not found. They are essential for this to go through.' });
 
-        const { annualReceivable } = req.body;
         const totalActiveShares = users.reduce((sum, item) => {
             const progressiveShares = item.progressiveShares;
             const paidAnnualShares = JSON.parse(item.annualShares).filter(share => share.paid).length;
             return sum + progressiveShares + paidAnnualShares;
         }, 0);
 
+        const totalPaidInterest = loans.reduce((sum, loan) => sum + Number(loan.interestPaid), 0);
+        const currentPeriodPaidInterest = totalPaidInterest
+            - users.reduce((sum, m) => sum + Number(m.distributedInterestPaid), 0);
+
         let totalWithdrawnAmount = 0;
 
         // Process each user
         for (const user of users) {
+            const userLoan = await Loan.findOne({ where: { memberId: user.id } });
+            if (!userLoan) res.status(404).json({ error: `Could not find ${user.username}'s loan status to determing their paid interest` });
+
             const progressiveShares = user.progressiveShares;
             const paidAnnualShares = JSON.parse(user.annualShares).filter(share => share.paid).length;
             const activeShares = progressiveShares + paidAnnualShares;
             const sharesProportion = totalActiveShares > 0 ? activeShares / totalActiveShares : 0;
 
             // Compute interest
-            const activeInterest = sharesProportion * annualReceivable;
-            const totalInterest = activeInterest + Number(user.initialInterest);
+            const totalInterest = (currentPeriodPaidInterest * sharesProportion) + Number(user.initialInterest);
 
-            // Extract multiple shares amount
+            // Extract interest that remains amount
             const interestReceivable = Math.floor(totalInterest / 20000) * 20000;
             const interestRemains = totalInterest - interestReceivable;
 
-            // Update user interest only (shares and cotisation remain unchanged)
+            // Update user
             user.initialInterest = interestRemains;
             user.progressiveShares = 0; // Reset progressiveShares for the new year
+            user.distributedInterestPaid = userLoan.interestPaid || 0;
             user.annualShares = JSON.parse(user.annualShares)
                 .map(share => ({ ...share, paid: false, hasPenalties: false }));
+
             await user.save();
 
             totalWithdrawnAmount += interestReceivable;
