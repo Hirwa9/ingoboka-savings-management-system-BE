@@ -116,6 +116,11 @@ const User = db.define('users', {
         allowNull: false,
         defaultValue: 0,
     },
+    distributedInterestPaid: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+    },
     cotisation: {
         type: DataTypes.INTEGER,
         allowNull: false,
