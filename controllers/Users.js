@@ -264,7 +264,7 @@ export const RemoveMember = async (req, res) => {
         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
 
         const { cotisation, social } = user;
-        const totalContributions = cotisation + social;
+        const totalContributions = cotisation + Number(social);
 
         const loan = await Loan.findOne({
             where: {
