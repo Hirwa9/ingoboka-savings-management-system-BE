@@ -83,40 +83,49 @@ export const addCreditPenalty = async (req, res) => {
     const { secondaryType, penaltyAmount, comment } = req.body;
 
     try {
-        // Add penalty record
-        await Record.create({
-            memberId: id,
-            recordType: 'penalty',
-            recordSecondaryType: secondaryType,
-            recordAmount: penaltyAmount,
-            comment,
-        });
-
-        // Update Figures (penalties + balance)
+        // Fetch all required data first
         const figures = await Figures.findOne();
-        await figures.increment({
-            penalties: penaltyAmount,
-            balance: penaltyAmount,
-        });
-
-        // Fetch all users
         const users = await User.findAll();
+        const currentUser = users.find(u => u.id === Number(id));
         const totalUsers = users.length;
 
-        if (totalUsers > 0) {
-            // Compute the exact share per user
-            const individualPenalty = penaltyAmount / totalUsers;
-
-            // Distribute penalty among all users
-            await Promise.all(users.map(user => {
-                return user.increment('initialInterest', { by: individualPenalty });
-            }));
+        // Ensure required data exists before proceeding
+        if (!figures) {
+            return res.status(500).json({ message: "Figures data not found." });
+        }
+        if (!currentUser) {
+            return res.status(404).json({ message: "User not found." });
+        }
+        if (totalUsers === 0) {
+            return res.status(500).json({ message: "No users found." });
         }
 
-        res.status(200).json({ message: "Penalty applied and distributed successfully." });
+        // Compute the penalty share per user
+        const individualPenalty = penaltyAmount / totalUsers;
+
+        // Now proceed with database updates
+        await Promise.all([
+            Record.create({
+                memberId: id,
+                recordType: 'penalty',
+                recordSecondaryType: secondaryType,
+                recordAmount: penaltyAmount,
+                comment,
+            }),
+            figures.increment({
+                penalties: penaltyAmount,
+                balance: penaltyAmount,
+            }),
+            ...users.map(user => user.increment('initialInterest', { by: individualPenalty }))
+        ]);
+
+        // Return success response only if all operations succeed
+        res.status(200).json({
+            message: `${penaltyAmount.toLocaleString()} RWF penalty applied to ${currentUser.username} and distributed successfully.`
+        });
+
     } catch (error) {
         console.error("Error applying penalty:", error);
         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
     }
 };
-
