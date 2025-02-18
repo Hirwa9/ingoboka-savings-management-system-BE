@@ -173,7 +173,7 @@ export const Register = async (req, res) => {
         // `
         //     );
 
-        return res.status(201).json({ message: `User ${newUser.username} registered successfully`, userId: newUser.id });
+        return res.status(201).json({ message: `User ${newUser.username} is registered successfully`, userId: newUser.id });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ message: 'Registration failed. Please try again later.', error: error.message });
@@ -788,7 +788,7 @@ export const addMultipleShares = async (req, res) => {
             return month;
         });
 
-        user.annualShares = annualShares; // Store back as array (DB might store as string)
+        user.annualShares = annualShares;
         user.progressiveShares += remainingShares;
 
         // Handle new member calculations
@@ -797,7 +797,7 @@ export const addMultipleShares = async (req, res) => {
 
             // Calculate average initial interest
             const totalInitialInterest = users.reduce((sum, usr) => sum + Number(usr.initialInterest || 0), 0);
-            const averageInitialInterest = users.length > 0 ? totalInitialInterest / users.length : 0;
+            const averageInitialInterest = users.length > 0 ? totalInitialInterest / (users.length - 1) : 0;
 
             user.social = Number(user.social) + Number(newMemberSocial);
             user.initialInterest = Number(averageInitialInterest);
