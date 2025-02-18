@@ -671,35 +671,141 @@ export const editSocial = async (req, res) => {
 };
 
 // Add multiple shares
+// export const addMultipleShares = async (req, res) => {
+//     const { id } = req.params;
+//     const { newMember, progressiveShares, newMemberSocial, newMemberInterest, comment } = req.body;
+
+//     try {
+//         const user = await User.findByPk(id);
+//         const figures = await Figures.findOne();
+//         const loans = await Loan.findAll();
+//         if (!user) return res.status(404).json({ error: 'User not found' });
+//         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
+//         if (!loans) return res.status(404).json({ error: 'Loans records not found' });
+
+//         const shareMultiples = progressiveShares * 20000;
+
+//         user.shares += Number(progressiveShares);
+//         user.cotisation += shareMultiples;
+
+//         // Ensure annualShares is an array
+//         let annualShares = typeof user.annualShares === 'string'
+//             ? JSON.parse(user.annualShares)
+//             : user.annualShares;
+
+//         let remainingShares = Number(progressiveShares);
+//         annualShares = annualShares.map((month) => {
+//             if (!month.paid && remainingShares > 0) {
+//                 month.paid = true;
+//                 remainingShares--;
+//             }
+//             return month;
+//         });
+
+//         // Convert back to string before saving
+//         user.annualShares = annualShares;
+
+//         // Add remaining shares to progressiveShares if any
+//         user.progressiveShares += remainingShares;
+
+//         // Keep new member's social & interest updates
+//         if (newMember) {
+//             const userLoan = loans.find(ln => ln.memberId === user.id);
+
+//             user.social = Number(user.social) + Number(newMemberSocial);
+//             userLoan.interestPaid += Number(newMemberInterest);
+
+//             await userLoan.save();
+//             await figures.increment({
+//                 balance: (Number(newMemberSocial) + Number(newMemberInterest))
+//             });
+//         }
+
+//         await user.save();
+//         await figures.increment({ balance: shareMultiples });
+
+//         // Create transaction record
+//         if (progressiveShares && progressiveShares > 0) {
+//             await Record.create({
+//                 memberId: id,
+//                 recordType: 'deposit',
+//                 recordSecondaryType: 'Multiple shares record',
+//                 recordAmount: shareMultiples,
+//                 comment,
+//             });
+//         }
+
+//         // Send email notification
+//         const emailContent = `
+//             Hello ${user.husbandFirstName},
+
+//             Your multiple shares on IKIMINA INGOBOKA have been added successfully.
+//             Added shares: ${progressiveShares}
+//             Respective amount: ${(progressiveShares * 20000).toLocaleString()} RWF
+//             You can login to your account to see full details.
+//         `;
+//         // Uncomment to enable email sending
+//         // await sendEmail(user.email, 'Ingoboka Multiple Shares Update', '', emailContent);
+//         // await sendEmail('hirwawilly9@gmail.com', 'Ingoboka Multiple Shares Update', '', emailContent);
+
+//         res.status(200).json({ message: `${progressiveShares} multiple shares added successfully.` });
+//     } catch (error) {
+//         console.error("Error updating multiple shares:", error);
+//         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
+//     }
+// };
+
 export const addMultipleShares = async (req, res) => {
     const { id } = req.params;
     const { newMember, progressiveShares, newMemberSocial, newMemberInterest, comment } = req.body;
 
     try {
-        const user = await User.findByPk(id);
+        const users = await User.findAll(); // Fetch all users
+        const user = users.find(u => u.id == id); // Find the corresponding user
         const figures = await Figures.findOne();
+        const loans = await Loan.findAll();
+
         if (!user) return res.status(404).json({ error: 'User not found' });
         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
+        if (!loans) return res.status(404).json({ error: 'Loans records not found' });
 
         const shareMultiples = progressiveShares * 20000;
 
         user.shares += Number(progressiveShares);
         user.cotisation += shareMultiples;
 
-        // Update user's progressiveShares, shares, and cotisation
-        if (!newMember) {
-            user.progressiveShares += Number(progressiveShares);
-        }
+        // Ensure annualShares is an array
+        let annualShares = typeof user.annualShares === 'string'
+            ? JSON.parse(user.annualShares)
+            : user.annualShares;
 
-        // If updating a new member, update the user's social column 
-        // and initial interest (if any)
+        let remainingShares = Number(progressiveShares);
+        annualShares = annualShares.map((month) => {
+            if (!month.paid && remainingShares > 0) {
+                month.paid = true;
+                remainingShares--;
+            }
+            return month;
+        });
+
+        user.annualShares = annualShares; // Store back as array (DB might store as string)
+        user.progressiveShares += remainingShares;
+
+        // Handle new member calculations
         if (newMember) {
-            user.social = Number(user.social) + Number(newMemberSocial);
-            user.initialInterest = Number(newMemberInterest);
+            const userLoan = loans.find(ln => ln.memberId === user.id);
 
-            // Update the balance in the Figures table
+            // Calculate average initial interest
+            const totalInitialInterest = users.reduce((sum, usr) => sum + Number(usr.initialInterest || 0), 0);
+            const averageInitialInterest = users.length > 0 ? totalInitialInterest / users.length : 0;
+
+            user.social = Number(user.social) + Number(newMemberSocial);
+            user.initialInterest = Number(averageInitialInterest);
+            userLoan.interestPaid += Number(newMemberInterest) - averageInitialInterest;
+
+            await userLoan.save();
             await figures.increment({
-                balance: (Number(newMemberSocial) + Number(newMemberInterest))
+                balance: Number(newMemberSocial) + Number(newMemberInterest)
             });
         }
 
