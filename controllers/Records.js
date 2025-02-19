@@ -19,10 +19,12 @@ export const addExpense = async (req, res) => {
     try {
         // Fetch all active members
         const members = await User.findAll();
+        const figures = await Figures.findOne();
+
+        if (!members || members.length === 0) return res.status(404).json({ error: 'No members found. Cannot process expense' });
+        if (!figures) return res.status(404).json({ error: 'Figures records not found. They are essential for this to go through.' });
+
         const totalMembers = members.length;
-        if (totalMembers === 0) {
-            return res.status(400).json({ error: "No members found. Cannot process expense." });
-        }
 
         // Calculate total available funds (sum of all members' social + initialInterest)
         const totalSocial = members.reduce((sum, member) => sum + Number(member.social), 0);
@@ -60,6 +62,8 @@ export const addExpense = async (req, res) => {
             // Save the updated member details
             await member.save();
         }
+
+        await figures.decrement('balance', { by: Number(expenseAmount) });
 
         // Create the expense record
         await Record.create({
