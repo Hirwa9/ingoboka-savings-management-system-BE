@@ -777,22 +777,6 @@ export const addMultipleShares = async (req, res) => {
 
         user.shares += Number(progressiveShares);
         user.cotisation += shareMultiples;
-
-        // Ensure annualShares is an array
-        // let annualShares = typeof user.annualShares === 'string'
-        //     ? JSON.parse(user.annualShares)
-        //     : user.annualShares;
-
-        // let remainingShares = Number(progressiveShares);
-        // annualShares = annualShares.map((month) => {
-        //     if (!month.paid && remainingShares > 0) {
-        //         month.paid = true;
-        //         remainingShares--;
-        //     }
-        //     return month;
-        // });
-
-        // user.annualShares = annualShares;
         user.progressiveShares += Number(progressiveShares);
 
         // Handle new member calculations
