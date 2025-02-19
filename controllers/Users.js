@@ -911,6 +911,7 @@ export const withdrawAnnualInterest = async (req, res) => {
         const users = await User.findAll();
         const figures = await Figures.findOne();
         const loans = await Loan.findAll();
+
         if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
         if (!figures) return res.status(404).json({ error: 'Figures records not found. They are essential for this to go through.' });
         if (!loans) return res.status(404).json({ error: 'Credit records not found. They are essential for this to go through.' });
@@ -927,10 +928,32 @@ export const withdrawAnnualInterest = async (req, res) => {
 
         let totalWithdrawnAmount = 0;
 
-        // Process each user
+        // Calculate total withdrawal amount before modifying any table
         for (const user of users) {
             const userLoan = await Loan.findOne({ where: { memberId: user.id } });
-            if (!userLoan) res.status(404).json({ error: `Could not find ${user.username}'s loan status to determing their paid interest` });
+            if (!userLoan) return res.status(404).json({ error: `Could not find ${user.username}'s loan status to determine their paid interest` });
+
+            const progressiveShares = user.progressiveShares;
+            const paidAnnualShares = JSON.parse(user.annualShares).filter(share => share.paid).length;
+            const activeShares = progressiveShares + paidAnnualShares;
+            const sharesProportion = totalActiveShares > 0 ? activeShares / totalActiveShares : 0;
+
+            // Compute interest
+            const totalInterest = (currentPeriodPaidInterest * sharesProportion) + Number(user.initialInterest);
+
+            // Extract interest that can be withdrawn (rounded down to nearest 20,000)
+            const interestReceivable = Math.floor(totalInterest / 20000) * 20000;
+            totalWithdrawnAmount += interestReceivable;
+        }
+
+        // Check if balance is sufficient for withdrawal
+        if (figures.balance < totalWithdrawnAmount) {
+            return res.status(400).json({ error: 'Insufficient balance to process the withdrawal.' });
+        }
+
+        // Process each user since balance is sufficient
+        for (const user of users) {
+            const userLoan = await Loan.findOne({ where: { memberId: user.id } });
 
             const progressiveShares = user.progressiveShares;
             const paidAnnualShares = JSON.parse(user.annualShares).filter(share => share.paid).length;
@@ -952,8 +975,6 @@ export const withdrawAnnualInterest = async (req, res) => {
                 .map(share => ({ ...share, paid: false, hasPenalties: false }));
 
             await user.save();
-
-            totalWithdrawnAmount += interestReceivable;
         }
 
         // Deduct total withdrawn amount from balance
