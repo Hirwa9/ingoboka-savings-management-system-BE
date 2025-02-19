@@ -580,11 +580,11 @@ export const recordAnnualSavings = async (req, res) => {
                 const currentYear = today.getFullYear();
                 const monthIndex = new Date(`${month} 1, ${currentYear}`).getMonth(); // Get index from month name
                 const month10thDate = new Date(currentYear, monthIndex, 10); // 10th of the month
-                const isLate = today > month10thDate;
+                const isLate = (today > month10thDate && applyDelayPenalties);
 
                 // Update the month record
                 monthRecord.paid = true;
-                monthRecord.hasPenalties = applyDelayPenalties ? isLate : false;
+                monthRecord.hasPenalties = isLate ? true : false;
 
                 // Add saving amount
                 totalSavingAmount += isLate ? 21000 : 20000; // Apply penalty if late
