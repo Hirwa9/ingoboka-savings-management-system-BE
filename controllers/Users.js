@@ -788,8 +788,16 @@ export const addMultipleShares = async (req, res) => {
             const averageInitialInterest = users.length > 0 ? totalInitialInterest / (users.length - 1) : 0;
 
             user.social = Number(user.social) + Number(newMemberSocial);
-            user.initialInterest = Number(averageInitialInterest);
-            userLoan.interestPaid += Number(newMemberInterest) - averageInitialInterest;
+
+            // Check if the interest can be stored separately 
+            // to avoid negative values
+            const interestDiff = Number(newMemberInterest) - averageInitialInterest;
+            if (interestDiff > 0) {
+                user.initialInterest = Number(averageInitialInterest);
+                userLoan.interestPaid += interestDiff;
+            } else {
+                user.initialInterest = Number(newMemberInterest);
+            }
 
             await userLoan.save();
             await figures.increment({
