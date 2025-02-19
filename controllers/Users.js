@@ -185,49 +185,91 @@ export const Login = async (req, res) => {
     try {
         const { emailOrUsername, password } = req.body;
 
-        const user = await User.findOne({
-            where: {
-                [Op.or]: [
-                    { husbandEmail: emailOrUsername },
-                    { username: emailOrUsername }
-                ]
-            }
-        });
+        if (emailOrUsername.toLowerCase() === 'admin') {
+            // Login as an admin
+            const user = await User.findOne({ where: { role: 'accountant' } });
 
-        if (!user) return res.status(404).json({ message: 'Invalid credentials. Please try again.' });
+            if (!user) return res.status(404).json({ message: 'Invalid credentials. Please try again.' });
 
-        const match = await bcrypt.compare(password, user.password);
-        if (!match) return res.status(400).json({ message: "Invalid credentials. Please try again." });
+            const match = await bcrypt.compare(password, user.password);
+            if (!match) return res.status(400).json({ message: "Invalid credentials. Please try again." });
 
-        const accessToken = jwt.sign(
-            { id: user.id, name: user.name, email: user.email },
-            process.env.ACCESS_TOKEN_SECRET,
-            { expiresIn: '15m' }
-        );
+            const accessToken = jwt.sign(
+                { id: user.id, name: user.name, email: user.email },
+                process.env.ACCESS_TOKEN_SECRET,
+                { expiresIn: '15m' }
+            );
 
-        const refreshToken = jwt.sign(
-            { id: user.id, name: user.name, email: user.email },
-            process.env.REFRESH_TOKEN_SECRET,
-            { expiresIn: '3h' }
-        );
+            const refreshToken = jwt.sign(
+                { id: user.id, name: user.name, email: user.email },
+                process.env.REFRESH_TOKEN_SECRET,
+                { expiresIn: '3h' }
+            );
 
-        await User.update({ token: refreshToken }, { where: { id: user.id } });
+            await User.update({ token: refreshToken }, { where: { id: user.id } });
 
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "Lax",
-            maxAge: 15 * 60 * 1000, // 15 minutes
-        });
+            res.cookie("accessToken", accessToken, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "Lax",
+                maxAge: 15 * 60 * 1000, // 15 minutes
+            });
 
-        res.cookie("refreshToken", refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "Lax",
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
+            res.cookie("refreshToken", refreshToken, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "Lax",
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            });
 
-        res.json({ accessToken, user: { type: user.type, id: user.id } });
+            res.json({ accessToken, user: { type: 'admin', id: user.id } });
+        } else {
+            // Login as a user
+            const user = await User.findOne({
+                where: {
+                    [Op.or]: [
+                        { husbandEmail: emailOrUsername },
+                        { username: emailOrUsername }
+                    ]
+                }
+            });
+
+            if (!user) return res.status(404).json({ message: 'Invalid credentials. Please try again.' });
+
+            const match = await bcrypt.compare(password, user.password);
+            if (!match) return res.status(400).json({ message: "Invalid credentials. Please try again." });
+
+            const accessToken = jwt.sign(
+                { id: user.id, name: user.name, email: user.email },
+                process.env.ACCESS_TOKEN_SECRET,
+                { expiresIn: '15m' }
+            );
+
+            const refreshToken = jwt.sign(
+                { id: user.id, name: user.name, email: user.email },
+                process.env.REFRESH_TOKEN_SECRET,
+                { expiresIn: '3h' }
+            );
+
+            await User.update({ token: refreshToken }, { where: { id: user.id } });
+
+            res.cookie("accessToken", accessToken, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "Lax",
+                maxAge: 15 * 60 * 1000, // 15 minutes
+            });
+
+            res.cookie("refreshToken", refreshToken, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "Lax",
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            });
+
+            res.json({ accessToken, user: { type: 'member', id: user.id } });
+        }
+
     } catch (error) {
         res.status(500).json({ message: "Login failed. Please try again later", error: error });
     }
