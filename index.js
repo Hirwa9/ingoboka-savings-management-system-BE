@@ -20,7 +20,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Cors
 const allowedOrigins = [
-    // 'http://localhost:3000',
+    'http://localhost:3000',
     'https://ingoboka-savings-management-system.onrender.com', // Render FE URL
     'https://ingoboka-savings-management-system-be.onrender.com'  // Render BE URL
 ];
@@ -36,6 +36,9 @@ app.use(cors({
         return callback(null, true);
     }
 }));
+
+app.options("*", cors());
+
 
 app.use(cookieParser());
 app.use(express.json());

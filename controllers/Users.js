@@ -1,12 +1,12 @@
-import User from "../models/UserModel.js";
-import Record from "../models/RecordModel.js";
-import Loan from "../models/LoanModel.js";
+import User from "../models/user_model.js";
+import Record from "../models/record_model.js";
+import Loan from "../models/loan_model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import sendEmail from "../utils/sendEmail.js";  // Nodemailer sendEmail utility
 import { generateStrongPassword } from "../utils/generateStrongPassword.js";
 import { Op } from "sequelize";
-import Figures from "../models/FiguresModel.js";
+import Figures from "../models/figures_model.js";
 import db from "../config/Database.js";
 
 export const getUsers = async (req, res) => {
@@ -197,13 +197,13 @@ export const Login = async (req, res) => {
             const accessToken = jwt.sign(
                 { id: user.id, name: user.name, email: user.email },
                 process.env.ACCESS_TOKEN_SECRET,
-                { expiresIn: '15m' }
+                { expiresIn: '12h' }
             );
 
             const refreshToken = jwt.sign(
                 { id: user.id, name: user.name, email: user.email },
                 process.env.REFRESH_TOKEN_SECRET,
-                { expiresIn: '3h' }
+                { expiresIn: '3d' }
             );
 
             await User.update({ token: refreshToken }, { where: { id: user.id } });
@@ -242,13 +242,13 @@ export const Login = async (req, res) => {
             const accessToken = jwt.sign(
                 { id: user.id, name: user.name, email: user.email },
                 process.env.ACCESS_TOKEN_SECRET,
-                { expiresIn: '15m' }
+                { expiresIn: '12h' }
             );
 
             const refreshToken = jwt.sign(
                 { id: user.id, name: user.name, email: user.email },
                 process.env.REFRESH_TOKEN_SECRET,
-                { expiresIn: '3h' }
+                { expiresIn: '3d' }
             );
 
             await User.update({ token: refreshToken }, { where: { id: user.id } });

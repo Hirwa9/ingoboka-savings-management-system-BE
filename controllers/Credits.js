@@ -1,6 +1,6 @@
-import Credits from "../models/CreditModel.js";
-import Figures from "../models/FiguresModel.js";
-import Loan from "../models/LoanModel.js";
+import Credits from "../models/credit_model.js";
+import Figures from "../models/figures_model.js";
+import Loan from "../models/loan_model.js";
 
 // Get all credits
 export const getCredits = async (req, res) => {

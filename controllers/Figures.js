@@ -1,4 +1,4 @@
-import Figures from "../models/FiguresModel.js";
+import Figures from "../models/figures_model.js";
 
 // Get all figures
 export const getFigures = async (req, res) => {

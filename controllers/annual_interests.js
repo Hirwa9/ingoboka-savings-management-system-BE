@@ -1,4 +1,4 @@
-import AnnualInterest from "../models/AnnualInterestsModel.js";
+import AnnualInterest from "../models/annual_interests_model.js";
 
 // Get all credits
 export const getAnnualInterestRecords = async (req, res) => {

@@ -1,6 +1,6 @@
-import Figures from "../models/FiguresModel.js";
-import Record from "../models/RecordModel.js";
-import User from "../models/UserModel.js";
+import Figures from "../models/figures_model.js";
+import Record from "../models/record_model.js";
+import User from "../models/user_model.js";
 
 // Get all credits
 export const getRecords = async (req, res) => {
