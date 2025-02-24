@@ -1,15 +1,27 @@
 import Settings from '../models/settings_model.js'; // Adjust the path to your Settings model
 
-// Helper function to fetch the current settings
+// Get system settings
 export const getSystemSettings = async () => {
-    return await Settings.findOne({ where: { id: 1 } }); // Assuming id: 1 is the settings entry
+    return await Settings.findOne();
 };
 
-// Helper function to update the settings
+// Fetch system settings
+export const fetchSystemSettings = async (req, res) => {
+    try {
+        const settings = await getSystemSettings();
+        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        
+        res.status(200).json(settings);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch settings', details: error.message });
+    }
+};
+
+// Update system settings
 const updateSettings = async (updatedData) => {
     await Settings.update(
         { settingsData: updatedData },
-        { where: { id: 1 } } // Assuming id: 1 is the settings entry
+        { where: { id: 1 } }
     );
 };
 
