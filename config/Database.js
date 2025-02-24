@@ -9,26 +9,26 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const db = new Sequelize('ingoboka_sm_system', 'root', '', {
-    host: "localhost",
-    dialect: "mysql"
-});
-export default db;
+// const db = new Sequelize('ingoboka_sm_system', 'root', '', {
+//     host: "localhost",
+//     dialect: "mysql"
+// });
+// export default db;
 
 // --> Hosted
 
-// const db = new Sequelize(process.env.MYSQL_DATABASE, process.env.MYSQL_USER, process.env.MYSQL_ROOT_PASSWORD, {
-//     host: process.env.MYSQL_HOST,
-//     port: process.env.MYSQL_PORT,
-//     dialect: "mysql",
-//     dialectOptions: {
-//         ssl: {
-//             require: true,
-//             rejectUnauthorized: false
-//         }
-//     }
-// });
-// export default db;
+const db = new Sequelize(process.env.MYSQL_DATABASE, process.env.MYSQL_USER, process.env.MYSQL_ROOT_PASSWORD, {
+    host: process.env.MYSQL_HOST,
+    port: process.env.MYSQL_PORT,
+    dialect: "mysql",
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
+    }
+});
+export default db;
 
 export const backupDatabase = async (req, res) => {
     try {
