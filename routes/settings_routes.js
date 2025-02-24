@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-    getSystemSettings,
+    fetchSystemSettings,
     updateSystemName,
     updateSystemAbrev,
     updateSystemEmail,
@@ -24,7 +24,7 @@ import {
 const settingsRouter = express.Router();
 
 // System settings
-settingsRouter.get('/system/all', getSystemSettings);
+settingsRouter.get('/system/all', fetchSystemSettings);
 settingsRouter.put('/system/name', updateSystemName);
 settingsRouter.put('/system/abrev', updateSystemAbrev);
 settingsRouter.put('/system/email', updateSystemEmail);
