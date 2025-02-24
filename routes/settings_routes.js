@@ -24,7 +24,7 @@ import {
 const settingsRouter = express.Router();
 
 // System settings
-settingsRouter.get('/system/all', fetchSystemSettings); // Get all settings
+settingsRouter.get('/system/all', fetchSystemSettings);
 settingsRouter.put('/system/name', updateSystemName);
 settingsRouter.put('/system/abrev', updateSystemAbrev);
 settingsRouter.put('/system/email', updateSystemEmail);
