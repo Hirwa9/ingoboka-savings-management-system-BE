@@ -8,6 +8,7 @@ import { generateStrongPassword } from "../utils/generateStrongPassword.js";
 import { Op } from "sequelize";
 import Figures from "../models/figures_model.js";
 import db from "../config/Database.js";
+import Settings from "../models/settings_model.js";
 
 export const getUsers = async (req, res) => {
     try {
@@ -606,8 +607,19 @@ export const recordAnnualSavings = async (req, res) => {
     try {
         const user = await User.findByPk(id);
         const figures = await Figures.findOne();
+        const settings = await Settings.findOne();
+
         if (!user) return res.status(404).json({ error: 'User not found' });
         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
+
+        const unitShareValue = JSON.parse(
+            settings.settingsData)?.savings.types
+            .find(t => t.type === 'cotisation')?.amount
+
+        const cotisationPenalty = JSON.parse(
+            settings.settingsData)?.savings.types
+            .find(t => t.type === 'cotisation')?.delayPenaltyAmount
 
         // Parse and update the user's annualShares
         let annualShares = JSON.parse(user.annualShares) || [];
@@ -629,7 +641,7 @@ export const recordAnnualSavings = async (req, res) => {
                 monthRecord.hasPenalties = isLate ? true : false;
 
                 // Add saving amount
-                totalSavingAmount += isLate ? 21000 : 20000; // Apply penalty if late
+                totalSavingAmount += isLate ? (unitShareValue + cotisationPenalty) : unitShareValue; // Apply penalty if late
             }
         });
 
@@ -810,12 +822,18 @@ export const addMultipleShares = async (req, res) => {
         const user = users.find(u => u.id == id);
         const figures = await Figures.findOne();
         const loans = await Loan.findAll();
+        const settings = await Settings.findOne();
 
         if (!user) return res.status(404).json({ error: 'User not found' });
         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
         if (!loans) return res.status(404).json({ error: 'Loans records not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
-        const shareMultiples = progressiveShares * 20000;
+        const unitShareValue = JSON.parse(
+            settings.settingsData)?.savings.types
+            .find(t => t.type === 'cotisation')?.amount
+
+        const shareMultiples = progressiveShares * unitShareValue;
 
         user.shares += Number(progressiveShares);
         user.cotisation += shareMultiples;
@@ -864,10 +882,10 @@ export const addMultipleShares = async (req, res) => {
         // Send email notification
         const emailContent = `
             Hello ${user.husbandFirstName},
-            
+
             Your multiple shares on IKIMINA INGOBOKA have been added successfully.
             Added shares: ${progressiveShares}
-            Respective amount: ${(progressiveShares * 20000).toLocaleString()} RWF
+            Respective amount: ${(progressiveShares * unitShareValue).toLocaleString()} RWF
             You can login to your account to see full details.
         `;
         // Uncomment to enable email sending
@@ -887,9 +905,18 @@ export const distributeAnnualInterest = async (req, res) => {
         const users = await User.findAll();
         const figures = await Figures.findOne();
         const loans = await Loan.findAll();
+        const settings = await Settings.findOne();
+
         if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
         if (!figures) return res.status(404).json({ error: 'Figures records not found. They are essential for this to go through.' });
         if (!loans) return res.status(404).json({ error: 'Credit records not found. They are essential for this to go through.' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
+
+        const unitShareValue = JSON.parse(
+            settings.settingsData)?.savings.types
+            .find(t => t.type === 'cotisation')?.amount
+
+        const shareMultiples = progressiveShares * unitShareValue;
 
         const totalActiveShares = users.reduce((sum, item) => {
             const progressiveShares = item.progressiveShares;
@@ -917,8 +944,8 @@ export const distributeAnnualInterest = async (req, res) => {
             const totalInterest = (currentPeriodPaidInterest * sharesProportion) + Number(user.initialInterest);
 
             // Extract multiple shares and interest amounts
-            const interestReceivable = Math.floor(totalInterest / 20000) * 20000;
-            const sharesReceivable = interestReceivable / 20000;
+            const interestReceivable = Math.floor(totalInterest / unitShareValue) * unitShareValue;
+            const sharesReceivable = interestReceivable / unitShareValue;
             const interestRemains = totalInterest - interestReceivable;
 
             // Update user
@@ -953,10 +980,18 @@ export const withdrawAnnualInterest = async (req, res) => {
         const users = await User.findAll();
         const figures = await Figures.findOne();
         const loans = await Loan.findAll();
+        const settings = await Settings.findOne();
 
         if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
         if (!figures) return res.status(404).json({ error: 'Figures records not found. They are essential for this to go through.' });
         if (!loans) return res.status(404).json({ error: 'Credit records not found. They are essential for this to go through.' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
+
+        const unitShareValue = JSON.parse(
+            settings.settingsData)?.savings.types
+            .find(t => t.type === 'cotisation')?.amount
+
+        const shareMultiples = progressiveShares * unitShareValue;
 
         const totalActiveShares = users.reduce((sum, item) => {
             const progressiveShares = item.progressiveShares;
@@ -984,7 +1019,7 @@ export const withdrawAnnualInterest = async (req, res) => {
             const totalInterest = (currentPeriodPaidInterest * sharesProportion) + Number(user.initialInterest);
 
             // Extract interest that can be withdrawn (rounded down to nearest 20,000)
-            const interestReceivable = Math.floor(totalInterest / 20000) * 20000;
+            const interestReceivable = Math.floor(totalInterest / unitShareValue) * unitShareValue;
             totalWithdrawnAmount += interestReceivable;
         }
 
@@ -1006,7 +1041,7 @@ export const withdrawAnnualInterest = async (req, res) => {
             const totalInterest = (currentPeriodPaidInterest * sharesProportion) + Number(user.initialInterest);
 
             // Extract interest that remains amount
-            const interestReceivable = Math.floor(totalInterest / 20000) * 20000;
+            const interestReceivable = Math.floor(totalInterest / unitShareValue) * unitShareValue;
             const interestRemains = totalInterest - interestReceivable;
 
             // Update user

@@ -57,6 +57,9 @@ export const createCredit = async (req, res) => {
     } = req.body;
 
     try {
+        const settings = await Settings.findOne();
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
+
         // Validate required fields
         if (!memberId || !creditAmount || !requestDate || !dueDate || !tranches) {
             return res.status(400).json({ error: 'Missing required fields' });

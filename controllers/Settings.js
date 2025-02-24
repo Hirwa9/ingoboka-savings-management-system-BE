@@ -9,7 +9,7 @@ export const getSystemSettings = async () => {
 export const fetchSystemSettings = async (req, res) => {
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
         
         res.status(200).json(settings);
     } catch (error) {
@@ -32,7 +32,7 @@ export const updateSystemName = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.system.name = name;
         await updateSettings(settings.settingsData);
@@ -51,7 +51,7 @@ export const updateSystemAbrev = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.system.abrev = abrev;
         await updateSettings(settings.settingsData);
@@ -70,7 +70,7 @@ export const updateSystemEmail = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.system.email = email;
         await updateSettings(settings.settingsData);
@@ -89,7 +89,7 @@ export const updateSystemPhone = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.system.phone = phone;
         await updateSettings(settings.settingsData);
@@ -108,7 +108,7 @@ export const updateSystemPobox = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.system.pobox = pobox;
         await updateSettings(settings.settingsData);
@@ -127,7 +127,7 @@ export const updateSystemMotto = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.system.motto = motto;
         await updateSettings(settings.settingsData);
@@ -146,7 +146,7 @@ export const updateSystemWebsite = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.system.website = website;
         await updateSettings(settings.settingsData);
@@ -165,7 +165,7 @@ export const updateSystemIzinaRyUbutore = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.system.izinaRyUbutore = izinaRyUbutore;
         await updateSettings(settings.settingsData);
@@ -184,7 +184,7 @@ export const updateSystemManager = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.system.manager = manager;
         await updateSettings(settings.settingsData);
@@ -203,7 +203,7 @@ export const updateSystemAddress = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.system.address = { country, district, sector, cell };
         await updateSettings(settings.settingsData);
@@ -222,7 +222,7 @@ export const updateMembersTypes = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.members.types = types;
         await updateSettings(settings.settingsData);
@@ -241,7 +241,7 @@ export const updateMembersRoles = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.members.roles = roles;
         await updateSettings(settings.settingsData);
@@ -260,7 +260,7 @@ export const updateSavingsMonthlyDueDay = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.savings.monthlyDueDay = monthlyDueDay;
         await updateSettings(settings.settingsData);
@@ -279,7 +279,7 @@ export const updateSavingsCotisationAmount = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         const cotisation = settings.settingsData.savings.types.find(type => type.type === 'cotisation');
         if (!cotisation) return res.status(404).json({ message: 'Cotisation type not found' });
@@ -301,7 +301,7 @@ export const updateSavingsCotisationDelayPenaltyAmount = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         const cotisation = settings.settingsData.savings.types.find(type => type.type === 'cotisation');
         if (!cotisation) return res.status(404).json({ message: 'Cotisation type not found' });
@@ -323,7 +323,7 @@ export const updateSavingsSocialAmount = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         const social = settings.settingsData.savings.types.find(type => type.type === 'social');
         if (!social) return res.status(404).json({ message: 'Social type not found' });
@@ -345,7 +345,7 @@ export const updateExpensesTypes = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.expenses.types = types;
         await updateSettings(settings.settingsData);
@@ -364,7 +364,7 @@ export const updateCreditsInterests = async (req, res) => {
 
     try {
         const settings = await getSystemSettings();
-        if (!settings) return res.status(404).json({ message: 'Settings not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         settings.settingsData.credits.interests = interests;
         await updateSettings(settings.settingsData);
