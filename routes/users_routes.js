@@ -7,7 +7,6 @@ import { getUsers, Register, Login, Logout, SendUserOPT, VerifyUserOTP, ResetUse
 
 const usersRouter = express.Router();
 
-
 // usersRouter.get('/users', verifyToken, getUsers);             // Get users
 usersRouter.get('/users', getUsers);                             // Get users
 usersRouter.post('/users/register', Register);                   // Register a user
