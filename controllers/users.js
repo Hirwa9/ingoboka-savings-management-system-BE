@@ -195,19 +195,21 @@ export const Login = async (req, res) => {
             const match = await bcrypt.compare(password, user.password);
             if (!match) return res.status(400).json({ message: "Invalid credentials. Please try again." });
 
+            const { id, name, email, type } = user;
+
             const accessToken = jwt.sign(
-                { id: user.id, name: user.name, email: user.email },
+                { id, name, email },
                 process.env.ACCESS_TOKEN_SECRET,
                 { expiresIn: '12h' }
             );
 
             const refreshToken = jwt.sign(
-                { id: user.id, name: user.name, email: user.email },
+                { id, name, email },
                 process.env.REFRESH_TOKEN_SECRET,
                 { expiresIn: '3d' }
             );
 
-            await User.update({ token: refreshToken }, { where: { id: user.id } });
+            await User.update({ token: refreshToken }, { where: { id } });
 
             res.cookie("accessToken", accessToken, {
                 httpOnly: true,
@@ -223,7 +225,7 @@ export const Login = async (req, res) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             });
 
-            res.json({ accessToken, user: { type: 'admin', id: user.id } });
+            res.json({ accessToken, user: { type, id } });
         } else {
             // Login as a user
             const user = await User.findOne({
@@ -240,19 +242,21 @@ export const Login = async (req, res) => {
             const match = await bcrypt.compare(password, user.password);
             if (!match) return res.status(400).json({ message: "Invalid credentials. Please try again." });
 
+            const { id, name, email, type } = user;
+
             const accessToken = jwt.sign(
-                { id: user.id, name: user.name, email: user.email },
+                { id, name, email },
                 process.env.ACCESS_TOKEN_SECRET,
                 { expiresIn: '12h' }
             );
 
             const refreshToken = jwt.sign(
-                { id: user.id, name: user.name, email: user.email },
+                { id, name, email },
                 process.env.REFRESH_TOKEN_SECRET,
                 { expiresIn: '3d' }
             );
 
-            await User.update({ token: refreshToken }, { where: { id: user.id } });
+            await User.update({ token: refreshToken }, { where: { id } });
 
             res.cookie("accessToken", accessToken, {
                 httpOnly: true,
@@ -268,33 +272,33 @@ export const Login = async (req, res) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             });
 
-            res.json({ accessToken, user: { type: 'member', id: user.id } });
+            res.json({ accessToken, user: { type, id } });
         }
 
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: "Login failed. Please try again later", error: error });
     }
 };
 
 // Logout
 export const Logout = async (req, res) => {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) return res.sendStatus(204);
-    const user = await User.findAll({
-        where: {
-            token: refreshToken
-        }
-    });
-    if (!user[0]) return res.sendStatus(204);
-    const userId = user[0].id;
-    await User.update({ token: null }, {
-        where: {
-            id: userId
-        }
-    });
-    res.clearCookie('refreshToken');
-    return res.sendStatus(200);
-}
+    const refreshToken = req.cookies.refreshToken; // Extract from cookies
+
+    if (!refreshToken) return res.status(204).json({ message: "No token found" });
+
+    const user = await User.findOne({ where: { token: refreshToken } });
+    if (!user) return res.status(204).json({ message: "User not found" });
+
+    // Remove refreshToken from DB
+    await User.update({ token: null }, { where: { id: user.id } });
+
+    // Clear cookies
+    res.clearCookie("accessToken", { httpOnly: true, sameSite: "Lax", secure: true });
+    res.clearCookie("refreshToken", { httpOnly: true, sameSite: "Lax", secure: true });
+
+    return res.status(200).json({ message: "You're signed out" });
+};
 
 // Remove Member
 export const RemoveMember = async (req, res) => {
