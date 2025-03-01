@@ -1,4 +1,5 @@
-// --> Local
+import dotenv from 'dotenv';
+dotenv.config();
 
 import { Sequelize } from "sequelize";
 
@@ -9,33 +10,35 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// const db = new Sequelize('ingoboka_sm_system', 'root', '', {
-//     host: "localhost",
-//     dialect: "mysql"
-// });
-// export default db;
+let db;
 
-// --> Hosted
-
-const db = new Sequelize(process.env.MYSQL_DATABASE, process.env.MYSQL_USER, process.env.MYSQL_ROOT_PASSWORD, {
-    host: process.env.MYSQL_HOST,
-    port: process.env.MYSQL_PORT,
-    dialect: "mysql",
-    dialectOptions: {
-        ssl: {
-            require: true,
-            rejectUnauthorized: false
+if (process.env.NODE_ENV === 'development') {
+    // Local
+    db = new Sequelize('ingoboka_sm_system', 'root', '', {
+        host: "localhost",
+        dialect: "mysql"
+    });
+} else {
+    // Hosted
+    db = new Sequelize(process.env.MYSQL_DATABASE, process.env.MYSQL_USER, process.env.MYSQL_ROOT_PASSWORD, {
+        host: process.env.MYSQL_HOST,
+        port: process.env.MYSQL_PORT,
+        dialect: "mysql",
+        dialectOptions: {
+            ssl: {
+                require: true,
+                rejectUnauthorized: false
+            }
         }
-    }
-});
+    });
+}
+
 export default db;
 
 export const backupDatabase = async (req, res) => {
     try {
-        const dbUser = 'root';
-        const dbPass = ''; // Assuming the password is empty
-        // const dbUser = process.env.MYSQL_USER || 'root';
-        // const dbPass = process.env.MYSQL_ROOT_PASSWORD || '';
+        const dbUser = process.env.NODE_ENV === 'development' ? 'root' : process.env.MYSQL_USER;
+        const dbPass = process.env.NODE_ENV === 'development' ? '' : process.env.MYSQL_ROOT_PASSWORD;
         const dbName = process.env.MYSQL_DATABASE;
 
         if (!dbName) {
