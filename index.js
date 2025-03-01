@@ -9,7 +9,10 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 5000;
+
+app.use(cookieParser());
+app.use(express.json());
 
 // Derive __dirname in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -19,11 +22,12 @@ const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Cors
-const allowedOrigins = [
-    // 'http://localhost:3000',
-    'https://ingoboka-savings-management-system.onrender.com', // Render FE URL
-    'https://ingoboka-savings-management-system-be.onrender.com'  // Render BE URL
-];
+const allowedOrigins = process.env.NODE_ENV === 'development' ? 
+    ['http://localhost:3000'] : 
+    [
+        'https://ingoboka-savings-management-system.onrender.com', // Render FE URL
+        'https://ingoboka-savings-management-system-be.onrender.com'  // Render BE URL
+    ];
 
 app.use(cors({
     credentials: true,
@@ -37,11 +41,6 @@ app.use(cors({
     }
 }));
 
-app.options("*", cors());
-
-
-app.use(cookieParser());
-app.use(express.json());
 app.use(router);
 
 app.listen(port, () => console.log(`Server running at port ${port}`));
