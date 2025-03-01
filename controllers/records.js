@@ -1,11 +1,16 @@
-import Figures from "../models/figures_model.js";
 import Record from "../models/record_model.js";
-import User from "../models/user_model.js";
+import { allUsers } from "../controllers/users.js";
+import { allFigures } from "./figures.js";
+
+// All records
+export const allRecords = async () => {
+    return await Record.findAll();
+}
 
 // Get all credits
 export const getRecords = async (req, res) => {
     try {
-        const records = await Record.findAll();
+        const records = await allRecords();
         res.status(200).json(records);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch records', details: error.message });
@@ -18,8 +23,8 @@ export const addExpense = async (req, res) => {
 
     try {
         // Fetch all active members
-        const members = await User.findAll();
-        const figures = await Figures.findOne();
+        const members = await allUsers();
+        const figures = await allFigures();
 
         if (!members || members.length === 0) return res.status(404).json({ error: 'No members found. Cannot process expense' });
         if (!figures) return res.status(404).json({ error: 'Figures records not found. They are essential for this to go through.' });
@@ -88,8 +93,8 @@ export const addCreditPenalty = async (req, res) => {
 
     try {
         // Fetch all required data first
-        const figures = await Figures.findOne();
-        const users = await User.findAll();
+        const figures = await allFigures();
+        const users = await allUsers();
         const currentUser = users.find(u => u.id === Number(id));
         const totalUsers = users.length;
 

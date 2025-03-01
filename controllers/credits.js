@@ -1,11 +1,17 @@
 import Credits from "../models/credit_model.js";
-import Figures from "../models/figures_model.js";
 import Loan from "../models/loan_model.js";
+import { allFigures } from "./figures.js";
+import { allSystemSettings } from "./settings.js";
+
+// All credits
+export const allCredits = async () => {
+    return await Credits.findAll();
+}
 
 // Get all credits
 export const getCredits = async (req, res) => {
     try {
-        const credits = await Credits.findAll();
+        const credits = await allCredits();
         res.status(200).json(credits);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch credits', details: error.message });
@@ -57,7 +63,7 @@ export const createCredit = async (req, res) => {
     } = req.body;
 
     try {
-        const settings = await Settings.findOne();
+        const settings = await allSystemSettings();
         if (!settings) return res.status(404).json({ message: 'System settings not found' });
 
         // Validate required fields
@@ -161,7 +167,7 @@ export const approveCreditRequest = async (req, res) => {
         if (credit.status === "approved") return res.status(400).json({ error: "Credit is already approved" });
 
         // Fetch figures
-        const figures = await Figures.findOne();
+        const figures = await allFigures();
         if (!figures) return res.status(404).json({ error: "Figures record not found" });
 
         const creditAmount = Number(credit.creditAmount);

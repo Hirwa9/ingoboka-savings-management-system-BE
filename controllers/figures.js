@@ -1,10 +1,14 @@
 import Figures from "../models/figures_model.js";
 
+// All figures
+export const allFigures = async () => {
+    return await Figures.findOne();
+}
+
 // Get all figures
 export const getFigures = async (req, res) => {
     try {
-        // const data = await Figures.findAll();
-        const figures = await Figures.findOne({ id: 1 });
+        const figures = await allFigures();
         res.status(200).json(figures);
     } catch (error) {
         res.status(500).json({ message: error.message });

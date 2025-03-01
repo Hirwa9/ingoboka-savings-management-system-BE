@@ -6,20 +6,26 @@ import jwt from "jsonwebtoken";
 import sendEmail from "../utils/sendEmail.js";  // Nodemailer sendEmail utility
 import { generateStrongPassword } from "../utils/generateStrongPassword.js";
 import { Op } from "sequelize";
-import Figures from "../models/figures_model.js";
-import db from "../config/Database.js";
-import Settings from "../models/settings_model.js";
+import { allFigures } from "./figures.js";
+import { allLoans } from "./loans.js";
+import { allSystemSettings } from "./settings.js";
 
+// All users
+export const allUsers = async () => {
+    return await User.findAll();
+}
+
+// Get all users
 export const getUsers = async (req, res) => {
     try {
-        const users = await User.findAll();
+        const users = await allUsers();
         res.json(users);
     } catch (error) {
         console.log(error);
     }
 }
 
-// Register
+// Register a user
 export const Register = async (req, res) => {
     try {
         let {
@@ -306,7 +312,7 @@ export const RemoveMember = async (req, res) => {
 
     try {
         const user = await User.findOne({ where: { husbandEmail: email } });
-        const figures = await Figures.findOne();
+        const figures = await allFigures();
         if (!user) return res.status(404).json({ message: 'User not found' });
         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
 
@@ -610,8 +616,8 @@ export const recordAnnualSavings = async (req, res) => {
 
     try {
         const user = await User.findByPk(id);
-        const figures = await Figures.findOne();
-        const settings = await Settings.findOne();
+        const figures = await allFigures();
+        const settings = await allSystemSettings();
 
         if (!user) return res.status(404).json({ error: 'User not found' });
         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
@@ -692,7 +698,7 @@ export const editSocial = async (req, res) => {
 
     try {
         const user = await User.findByPk(id);
-        const figures = await Figures.findOne();
+        const figures = await allFigures();
         if (!user) return res.status(404).json({ error: 'User not found' });
         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
 
@@ -734,10 +740,10 @@ export const editSocial = async (req, res) => {
 //     const { newMember, progressiveShares, newMemberSocial, newMemberInterest, comment } = req.body;
 
 //     try {
-//         const users = await User.findAll();
+//         const users = await allUsers();
 //         const user = users.find(u => u.id == id);
-//         const figures = await Figures.findOne();
-//         const loans = await Loan.findAll();
+//         const figures = await allFigures();
+//         const loans = await allLoans();
 
 //         if (!user) return res.status(404).json({ error: 'User not found' });
 //         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
@@ -822,11 +828,11 @@ export const addMultipleShares = async (req, res) => {
     const { newMember, progressiveShares, newMemberSocial, newMemberInterest, comment } = req.body;
 
     try {
-        const users = await User.findAll();
+        const users = await allUsers();
         const user = users.find(u => u.id == id);
-        const figures = await Figures.findOne();
-        const loans = await Loan.findAll();
-        const settings = await Settings.findOne();
+        const figures = await allFigures();
+        const loans = await allLoans();
+        const settings = await allSystemSettings();
 
         if (!user) return res.status(404).json({ error: 'User not found' });
         if (!figures) return res.status(404).json({ error: 'Figures record not found' });
@@ -906,10 +912,10 @@ export const addMultipleShares = async (req, res) => {
 // Interest distribution
 export const distributeAnnualInterest = async (req, res) => {
     try {
-        const users = await User.findAll();
-        const figures = await Figures.findOne();
-        const loans = await Loan.findAll();
-        const settings = await Settings.findOne();
+        const users = await allUsers();
+        const figures = await allFigures();
+        const loans = await allLoans();
+        const settings = await allSystemSettings();
 
         if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
         if (!figures) return res.status(404).json({ error: 'Figures records not found. They are essential for this to go through.' });
@@ -981,10 +987,10 @@ export const distributeAnnualInterest = async (req, res) => {
 // Interest withdraw
 export const withdrawAnnualInterest = async (req, res) => {
     try {
-        const users = await User.findAll();
-        const figures = await Figures.findOne();
-        const loans = await Loan.findAll();
-        const settings = await Settings.findOne();
+        const users = await allUsers();
+        const figures = await allFigures();
+        const loans = await allLoans();
+        const settings = await allSystemSettings();
 
         if (!users || users.length === 0) return res.status(404).json({ error: 'No users found' });
         if (!figures) return res.status(404).json({ error: 'Figures records not found. They are essential for this to go through.' });

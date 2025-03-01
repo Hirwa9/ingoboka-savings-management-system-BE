@@ -1,10 +1,15 @@
-import Figures from '../models/figures_model.js';
 import Loan from '../models/loan_model.js';
+import { allFigures } from './figures.js';
+
+// All loans
+export const allLoans = async () => {
+    return await Loan.findAll();
+}
 
 // Get all credits
 export const getLoans = async (req, res) => {
     try {
-        const loans = await Loan.findAll();
+        const loans = await allLoans();
         res.status(200).json(loans);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch loans', details: error.message });
@@ -79,7 +84,7 @@ export const payLoan = async (req, res) => {
             tranchesPending: updatedTranchesPending
         });
 
-        const figures = await Figures.findOne();
+        const figures = await allFigures();
 
         await figures.increment({
             balance: Number(loanToPay) + Number(interestToPay),
