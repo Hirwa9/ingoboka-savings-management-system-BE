@@ -838,8 +838,6 @@ export const distributeAnnualInterest = async (req, res) => {
             settings.settingsData)?.savings.types
             .find(t => t.type === 'cotisation')?.amount
 
-        const shareMultiples = progressiveShares * unitShareValue;
-
         const totalActiveShares = users.reduce((sum, item) => {
             const progressiveShares = item.progressiveShares;
             const paidAnnualShares = JSON.parse(item.annualShares).filter(share => share.paid).length;
@@ -912,8 +910,6 @@ export const withdrawAnnualInterest = async (req, res) => {
         const unitShareValue = JSON.parse(
             settings.settingsData)?.savings.types
             .find(t => t.type === 'cotisation')?.amount
-
-        const shareMultiples = progressiveShares * unitShareValue;
 
         const totalActiveShares = users.reduce((sum, item) => {
             const progressiveShares = item.progressiveShares;
