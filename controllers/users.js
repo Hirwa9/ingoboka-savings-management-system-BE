@@ -231,7 +231,7 @@ export const Login = async (req, res) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             });
 
-            res.json({ accessToken, user: { type, id } });
+            res.json({ accessToken, user: { type: "admin", id } });
         } else {
             // Login as a user
             const user = await User.findOne({
@@ -278,7 +278,7 @@ export const Login = async (req, res) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             });
 
-            res.json({ accessToken, user: { type, id } });
+            res.json({ accessToken, user: { type: "member", id } });
         }
 
     } catch (error) {
