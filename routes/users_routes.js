@@ -17,11 +17,11 @@ usersRouter.post('/logout', Logout);                           // Logout a user
 
 // Edit user info
 usersRouter.post('/user/:id/edit-husband-photo',
-    upload.single('husbandAvatar'),
+    upload.single("file"),
     editHusbandPhoto
 );  // Edit husband photo
 usersRouter.post('/user/:id/edit-wife-photo',
-    upload.single('wifeAvatar'),
+    upload.single("file"),
     editWifePhoto
 );  // Edit wife photo
 usersRouter.post('/user/:id/edit-wife-photo', editWifePhoto);                // Edit wife photo
