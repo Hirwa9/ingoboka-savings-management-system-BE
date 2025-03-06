@@ -1,20 +1,43 @@
-import multer from 'multer';
-import path from 'path';
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
-// Configure Multer storage
+// Define storage
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        // Different directories for husband and wife avatars
-        const folder = file.fieldname === 'husbandAvatar' ? 'husbandAvatars' : 'wifeAvatars';
-        cb(null, path.join('uploads', folder));
+        const { id } = req.params;
+        const uploadDir = `uploads/images/members/member_${id}/`;
+
+        // Ensure the directory exists
+        fs.mkdirSync(uploadDir, { recursive: true });
+
+        cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        // Rename the file to include a timestamp for uniqueness
-        cb(null, `${Date.now()}-${file.originalname}`);
-    }
+        let filename;
+        if (req.url.includes("edit-husband-photo")) {
+            filename = `primary_${Date.now()}_${file.originalname}`;
+        } else if (req.url.includes("edit-wife-photo")) {
+            filename = `partner_${Date.now()}_${file.originalname}`;
+        } else {
+            return cb(new Error("Invalid upload type"), false);
+        }
+
+        cb(null, filename);
+    },
 });
 
-// Multer instance
-const upload = multer({ storage });
+// File filter (optional)
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error("Invalid file type. Only JPEG and PNG are allowed."), false);
+    }
+};
+
+// Multer upload middleware
+const upload = multer({ storage, fileFilter });
 
 export default upload;
