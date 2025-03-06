@@ -512,7 +512,7 @@ export const editHusbandInfo = async (req, res) => {
         user.husbandEmail = husbandEmail;
         await user.save();
 
-        res.status(200).json({ message: `${user.username}'s info updated successfully"` });
+        res.status(200).json({ message: `${user.username}'s info updated successfully` });
     } catch (error) {
         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
     }
@@ -558,7 +558,7 @@ export const editWifeInfo = async (req, res) => {
         user.wifeEmail = wifeEmail;
         await user.save();
 
-        res.status(200).json({ message: `${user.wifeFirstName}'s info updated successfully"` });
+        res.status(200).json({ message: `${user.wifeFirstName}'s info updated successfully` });
     } catch (error) {
         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
     }
