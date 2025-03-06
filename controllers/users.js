@@ -512,7 +512,7 @@ export const editHusbandInfo = async (req, res) => {
         user.husbandEmail = husbandEmail;
         await user.save();
 
-        res.status(200).json({ message: "Member info updated successfully" });
+        res.status(200).json({ message: `${user.username}'s info updated successfully"` });
     } catch (error) {
         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
     }
@@ -545,22 +545,20 @@ export const editHusbandPhoto = async (req, res) => {
 // Edit wife info
 export const editWifeInfo = async (req, res) => {
     const { id } = req.params;
-    const { role, username, wifeFirstName, wifeLastName, wifePhone, wifeEmail } = req.body;
+    const { wifeFirstName, wifeLastName, wifePhone, wifeEmail } = req.body;
 
     try {
         const user = await User.findByPk(id);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         // Update user's info
-        user.role = role;
-        user.username = username;
         user.wifeFirstName = wifeFirstName;
         user.wifeLastName = wifeLastName;
         user.wifePhone = wifePhone;
         user.wifeEmail = wifeEmail;
         await user.save();
 
-        res.status(200).json({ message: "Member info updated successfully" });
+        res.status(200).json({ message: `${user.wifeFirstName}'s info updated successfully"` });
     } catch (error) {
         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
     }
