@@ -2,7 +2,6 @@ import jwt from "jsonwebtoken";
 
 export const verifyToken = (req, res) => {
     const accessToken = req.cookies.accessToken;
-    console.log('_________ reached')
     if (!accessToken) {
         return res.status(401).json({ message: "Access token missing" });
     }
