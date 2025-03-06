@@ -4,6 +4,7 @@ import Loan from "../models/loan_model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import sendEmail from "../utils/sendEmail.js";  // Nodemailer sendEmail utility
+import path from "path";
 import { generateStrongPassword } from "../utils/generateStrongPassword.js";
 import { Op } from "sequelize";
 import { allFigures } from "./figures.js";
@@ -518,7 +519,7 @@ export const editHusbandInfo = async (req, res) => {
     }
 };
 
-// Edit husband info
+// Edit husband's photo
 export const editHusbandPhoto = async (req, res) => {
     const { id } = req.params;
 
@@ -532,12 +533,13 @@ export const editHusbandPhoto = async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Save the file URL in the database
-        user.husbandAvatar = `/uploads/husbandAvatars/${req.file.filename}`;
+        // Save the file path in the database
+        user.husbandAvatar = `/uploads/images/members/member_${id}/${req.file.filename}`;
         await user.save();
 
-        res.status(200).json({ message: "Husband avatar updated successfully", url: user.husbandAvatar });
+        res.status(200).json({ message: `${user.husbandFirstName}'s avatar updated successfully`, url: user.husbandAvatar });
     } catch (error) {
+        console.error("Upload error:", error);
         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
     }
 };
@@ -564,7 +566,7 @@ export const editWifeInfo = async (req, res) => {
     }
 };
 
-// Edit husband info
+// Edit wife's photo
 export const editWifePhoto = async (req, res) => {
     const { id } = req.params;
 
@@ -578,12 +580,13 @@ export const editWifePhoto = async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Save the file URL in the database
-        user.husbandAvatar = `/uploads/wifeAvatars/${req.file.filename}`;
+        // Save the file path in the database
+        user.wifeAvatar = `/uploads/images/members/member_${id}/${req.file.filename}`;
         await user.save();
 
-        res.status(200).json({ message: "Husband avatar updated successfully", url: user.husbandAvatar });
+        res.status(200).json({ message: `${user.wifeFirstName}'s avatar updated successfully`, url: user.wifeAvatar });
     } catch (error) {
+        console.error("Upload error:", error);
         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
     }
 };
