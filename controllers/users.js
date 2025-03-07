@@ -533,8 +533,11 @@ export const editHusbandPhoto = async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Save the file path in the database
-        user.husbandAvatar = `/uploads/images/members/member_${id}/${req.file.filename}`;
+        // Get the base URL
+        const BASE_URL = process.env.BACKEND_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+
+        // Save the full image URL in the database
+        user.husbandAvatar = `${BASE_URL}/uploads/images/members/member_${id}/${req.file.filename}`;
         await user.save();
 
         res.status(200).json({ message: `${user.husbandFirstName}'s avatar updated successfully`, url: user.husbandAvatar });
@@ -580,8 +583,11 @@ export const editWifePhoto = async (req, res) => {
             return res.status(404).json({ error: "User not found" });
         }
 
-        // Save the file path in the database
-        user.wifeAvatar = `/uploads/images/members/member_${id}/${req.file.filename}`;
+        // Get the base URL
+        const BASE_URL = process.env.BACKEND_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
+
+        // Save the full image URL in the database
+        user.husbandAvatar = `${BASE_URL}/uploads/images/members/member_${id}/${req.file.filename}`;
         await user.save();
 
         res.status(200).json({ message: `${user.wifeFirstName}'s avatar updated successfully`, url: user.wifeAvatar });
