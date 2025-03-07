@@ -587,7 +587,7 @@ export const editWifePhoto = async (req, res) => {
         const BASE_URL = process.env.BACKEND_BASE_URL || `http://localhost:${process.env.PORT || 5000}`;
 
         // Save the full image URL in the database
-        user.husbandAvatar = `${BASE_URL}/uploads/images/members/member_${id}/${req.file.filename}`;
+        user.wifeAvatar = `${BASE_URL}/uploads/images/members/member_${id}/${req.file.filename}`;
         await user.save();
 
         res.status(200).json({ message: `${user.wifeFirstName}'s avatar updated successfully`, url: user.wifeAvatar });
