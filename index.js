@@ -31,13 +31,13 @@ const allowedOrigins = process.env.NODE_ENV === 'development' ?
 
 app.use(cors({
     credentials: true,
-    origin: function (origin, callback) {
-        if (!origin) return callback(null, true);
+    origin: function (origin, cb) {
+        if (!origin) return cb(null, true);
         if (allowedOrigins.indexOf(origin) === -1) {
             const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
+            return cb(new Error(msg), false);
         }
-        return callback(null, true);
+        return cb(null, true);
     }
 }));
 
