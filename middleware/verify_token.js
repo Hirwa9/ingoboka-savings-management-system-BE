@@ -5,12 +5,11 @@ export const verifyToken = (req, res) => {
     if (!accessToken) {
         return res.status(401).json({ message: "Access token missing" });
     }
-    
+
     jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
         if (err) {
             return res.status(403).json({ message: "Invalid or expired token" });
         }
-        console.log('_________ Verified user', user)
         res.json({ user });
     });
 };
