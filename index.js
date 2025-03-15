@@ -41,6 +41,9 @@ app.use(cors({
     }
 }));
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, 'build')));
+
 app.use(router);
 
 // Handle any other requests by sending back the React app
