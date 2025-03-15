@@ -22,8 +22,8 @@ const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Cors
-const allowedOrigins = process.env.NODE_ENV === 'development' ? 
-    ['http://localhost:3000'] : 
+const allowedOrigins = process.env.NODE_ENV === 'development' ?
+    ['http://localhost:3000'] :
     [
         'https://ingoboka-savings-management-system.onrender.com', // Render FE URL
         'https://ingoboka-savings-management-system-be.onrender.com'  // Render BE URL
@@ -42,5 +42,10 @@ app.use(cors({
 }));
 
 app.use(router);
+
+// Handle any other requests by sending back the React app
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
 
 app.listen(port, () => console.log(`Server running at port ${port}`));
