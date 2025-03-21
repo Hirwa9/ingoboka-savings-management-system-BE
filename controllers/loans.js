@@ -1,5 +1,7 @@
 import Loan from '../models/loan_model.js';
+import Record from '../models/record_model.js';
 import { allFigures } from './figures.js';
+import { allRecords } from './Records.js';
 
 // All loans
 export const allLoans = async () => {
@@ -60,7 +62,12 @@ export const payLoan = async (req, res) => {
 
     try {
         const loan = await Loan.findByPk(id);
+        const figures = await allFigures();
+        const records = await allRecords();
+
         if (!loan) return res.status(404).json({ error: 'Loan details not found' });
+        if (!figures) return res.status(404).json({ error: "Figures record not found" });
+        if (!records) return res.status(404).json({ error: "Records not found" });
 
         const updatedLoanPaid = (Number(loan.loanPaid) || 0) + (Number(loanToPay) || 0);
         const updatedLoanPending = (Number(loan.loanPending) || 0) - (Number(loanToPay) || 0);
@@ -84,12 +91,18 @@ export const payLoan = async (req, res) => {
             tranchesPending: updatedTranchesPending
         });
 
-        const figures = await allFigures();
-
         await figures.increment({
             balance: Number(loanToPay) + Number(interestToPay),
             paidInterest: interestToPay,
             paidCapital: loanToPay
+        });
+
+        await Record.create({
+            memberId: id,
+            recordType: 'loan',
+            recordSecondaryType: 'payment',
+            recordAmount: Number(loanToPay) + Number(interestToPay),
+            comment: JSON.stringify({ loanPaid: Number(loanToPay), interestPaid: Number(interestToPay), tranchesPaid: Number(tranchesToPay) })
         });
 
         res.status(200).json({ message: 'Loan paid successfully', loan });
