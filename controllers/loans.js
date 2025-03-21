@@ -1,7 +1,7 @@
 import Loan from '../models/loan_model.js';
 import Record from '../models/record_model.js';
 import { allFigures } from './figures.js';
-import { allRecords } from './Records.js';
+import { allRecords } from './records.js';
 
 // All loans
 export const allLoans = async () => {
