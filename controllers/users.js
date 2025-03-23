@@ -632,11 +632,11 @@ export const recordAnnualSavings = async (req, res) => {
 
         const unitShareValue = JSON.parse(
             settings.settingsData)?.savings.types
-            .find(t => t.type === 'cotisation')?.amount
+            .find(t => t.type === 'cotisation')?.amount;
 
         const cotisationPenalty = JSON.parse(
             settings.settingsData)?.savings.types
-            .find(t => t.type === 'cotisation')?.delayPenaltyAmount
+            .find(t => t.type === 'cotisation')?.delayPenaltyAmount;
 
         // Parse and update the user's annualShares
         let annualShares = JSON.parse(user.annualShares) || [];
@@ -698,8 +698,79 @@ export const recordAnnualSavings = async (req, res) => {
     }
 };
 
-// Edit Social
-export const editSocial = async (req, res) => {
+// Edit cotisation (delete)
+export const reverseAnnualSavings = async (req, res) => {
+    const { id } = req.params;
+    const { savings, comment, recordId } = req.body;
+
+    try {
+        const user = await User.findByPk(id);
+        const figures = await allFigures();
+        const settings = await allSystemSettings();
+
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!figures) return res.status(404).json({ error: 'Figures record not found' });
+        if (!settings) return res.status(404).json({ message: 'System settings not found' });
+
+        const unitShareValue = JSON.parse(
+            settings.settingsData)?.savings.types
+            .find(t => t.type === 'cotisation')?.amount;
+
+        const cotisationPenalty = JSON.parse(
+            settings.settingsData)?.savings.types
+            .find(t => t.type === 'cotisation')?.delayPenaltyAmount;
+
+        // Parse and update the user's annualShares
+        let annualShares = JSON.parse(user.annualShares) || [];
+        let totalSavingAmount = 0;
+
+        // Process each selected month
+        savings.forEach((month) => {
+            const monthRecord = annualShares.find((m) => m.month === month);
+
+            if (monthRecord && monthRecord.paid) {
+                const today = new Date();
+                const currentYear = today.getFullYear();
+                const monthIndex = new Date(`${month} 1, ${currentYear}`).getMonth(); // Get index from month name
+                const month10thDate = new Date(currentYear, monthIndex, 10); // 10th of the month
+                const isLate = (today > month10thDate && monthRecord.hasPenalties);
+
+                // Update the month record
+                monthRecord.paid = false;
+                monthRecord.hasPenalties = false;
+
+                // Subtract saving amount
+                totalSavingAmount += isLate ? (unitShareValue + cotisationPenalty) : unitShareValue; // Apply penalty if late
+            }
+        });
+
+        // Update user cotisation, annualShares, and total shares
+        user.cotisation = Number(user.cotisation) - totalSavingAmount;
+        user.annualShares = annualShares; // Save the updated JSON object
+        user.shares -= savings.length; // Remove shares from the total shares
+        await user.save();
+
+        await figures.decrement({ balance: Number(totalSavingAmount) });
+
+        // Delete transaction record in the records table
+        await Record.destroy({
+            where: {
+                id: recordId,
+                memberId: id,
+                recordType: 'deposit',
+                comment,
+            }
+        });
+
+        res.status(200).json({ message: `Savings reversed successfully for ${user.username}.` });
+    } catch (error) {
+        console.error("Error reversing cotisation:", error);
+        res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
+    }
+};
+
+// Record Social Saving
+export const recordSocialSavings = async (req, res) => {
     const { id } = req.params;
     const { savingAmount, comment } = req.body;
 
@@ -737,6 +808,42 @@ export const editSocial = async (req, res) => {
         res.status(200).json({ message: "Social updated successfully." });
     } catch (error) {
         console.error("Error updating social:", error);
+        res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
+    }
+};
+
+// Record Social Saving
+export const editSocialSavings = async (req, res) => {
+    const { id } = req.params;
+    const { recordId, savingAmount } = req.body;
+
+    try {
+        const user = await User.findByPk(id);
+        const figures = await allFigures();
+        const record = await Record.findByPk(recordId);
+
+        if (!user) return res.status(404).json({ error: "User not found" });
+        if (!figures) return res.status(404).json({ error: "Figures record not found" });
+        if (!record) return res.status(404).json({ error: "Record not found" });
+
+        const oldAmount = Number(record.recordAmount); // Previous recorded amount
+        const newAmount = Number(savingAmount);
+        const amountDifference = newAmount - oldAmount; // Difference between old and new amount
+
+        // Adjust user's social amount based on the difference
+        user.social = Number(user.social) + amountDifference;
+        await user.save();
+
+        // Adjust the total balance based on the difference
+        await figures.increment("balance", { by: amountDifference });
+
+        // Update the record entry
+        record.recordAmount = newAmount;
+        await record.save();
+
+        res.status(200).json({ message: "Social savings record updated successfully." });
+    } catch (error) {
+        console.error("Error updating social savings:", error);
         res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
     }
 };
