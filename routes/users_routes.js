@@ -3,7 +3,7 @@ import upload from "../config/multerConfig.js";
 
 import { refreshToken } from '../middleware/refresh_token.js';
 import { verifyToken } from '../middleware/verify_token.js';
-import { getUsers, Register, Login, Logout, SendUserOPT, VerifyUserOTP, ResetUserPassword, recordAnnualSavings, editShares, editSocial, editWifeInfo, editHusbandInfo, editWifePhoto, editHusbandPhoto, distributeAnnualInterest, withdrawAnnualInterest, addMultipleShares, RemoveMember } from "../controllers/users.js";
+import { getUsers, Register, Login, Logout, SendUserOPT, VerifyUserOTP, ResetUserPassword, recordAnnualSavings, editShares, recordSocialSavings, editWifeInfo, editHusbandInfo, editWifePhoto, editHusbandPhoto, distributeAnnualInterest, withdrawAnnualInterest, addMultipleShares, RemoveMember, reverseAnnualSavings, editSocialSavings } from "../controllers/users.js";
 
 const usersRouter = express.Router();
 
@@ -30,9 +30,11 @@ usersRouter.post('/user/:id/edit-wife-info', editWifeInfo);                  // 
 usersRouter.post('/user/remove', RemoveMember);                              // Remove a user
 
 // Savings
-usersRouter.post('/member/:id/shares', editShares);                          // Edit user's shares
-usersRouter.post('/member/:id/cotisation', recordAnnualSavings);                  // Edit user's cotisation amount
-usersRouter.post('/member/:id/social', editSocial);                          // Edit user's social amount
+usersRouter.post('/member/:id/shares/edit', editShares);                          // Edit user's shares
+usersRouter.post('/member/:id/cotisation', recordAnnualSavings);             // Record user's cotisation amount
+usersRouter.post('/member/:id/cotisation/reverse', reverseAnnualSavings);    // Reverse user's cotisation record
+usersRouter.post('/member/:id/social', recordSocialSavings);                 // Record user's social amount
+usersRouter.post('/member/:id/social/edit', editSocialSavings);                 // Record user's social amount
 usersRouter.post('/member/:id/multiple-shares', addMultipleShares);          // Edit user's social amount
 
 export default usersRouter;
