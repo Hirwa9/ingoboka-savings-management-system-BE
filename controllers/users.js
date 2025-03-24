@@ -848,6 +848,39 @@ export const editSocialSavings = async (req, res) => {
     }
 };
 
+// Delete Social Saving
+export const deleteSocialSavings = async (req, res) => {
+    const { id } = req.params;
+    const { recordId } = req.body;
+
+    try {
+        const user = await User.findByPk(id);
+        const figures = await allFigures();
+        const record = await Record.findByPk(recordId);
+
+        if (!user) return res.status(404).json({ error: "User not found" });
+        if (!figures) return res.status(404).json({ error: "Figures record not found" });
+        if (!record) return res.status(404).json({ error: "Record not found" });
+
+        const oldAmount = Number(record.recordAmount); // The amount to reverse
+
+        // Reverse the user's social amount
+        user.social = Number(user.social) - oldAmount;
+        await user.save();
+
+        // Reverse the total balance in figures
+        await figures.increment("balance", { by: -oldAmount });
+
+        // Delete the record entry
+        await record.destroy();
+
+        res.status(200).json({ message: "Social savings record deleted and changes reverted successfully." });
+    } catch (error) {
+        console.error("Error deleting social savings:", error);
+        res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
+    }
+};
+
 // Add multiple shares
 export const addMultipleShares = async (req, res) => {
     const { id } = req.params;
