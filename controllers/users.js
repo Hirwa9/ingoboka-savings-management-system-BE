@@ -192,8 +192,9 @@ export const Register = async (req, res) => {
 export const Login = async (req, res) => {
     try {
         const { emailOrUsername, password } = req.body;
+        const primaryCredential = emailOrUsername.trim();
 
-        if (emailOrUsername.toLowerCase() === 'admin') {
+        if (primaryCredential.toLowerCase() === 'admin') {
             // Login as an admin
             const user = await User.findOne({ where: { role: 'accountant' } });
 
@@ -238,8 +239,8 @@ export const Login = async (req, res) => {
             const user = await User.findOne({
                 where: {
                     [Op.or]: [
-                        { husbandEmail: emailOrUsername },
-                        { username: emailOrUsername }
+                        { husbandEmail: primaryCredential },
+                        { username: primaryCredential }
                     ]
                 }
             });
