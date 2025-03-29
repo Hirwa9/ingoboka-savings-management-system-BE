@@ -202,34 +202,25 @@ export const addCreditPenalty = async (req, res) => {
     const { secondaryType, penaltyAmount, comment } = req.body;
 
     try {
-        // Fetch all required data first
         const figures = await allFigures();
         const users = await allUsers();
         const currentUser = users.find(u => u.id === Number(id));
         const totalUsers = users.length;
 
-        // Ensure required data exists before proceeding
-        if (!figures) {
-            return res.status(500).json({ message: "Figures data not found." });
-        }
-        if (!currentUser) {
-            return res.status(404).json({ message: "User not found." });
-        }
-        if (totalUsers === 0) {
-            return res.status(500).json({ message: "No users found." });
+        if (!figures || !currentUser || totalUsers === 0) {
+            return res.status(500).json({ message: "Required data missing." });
         }
 
-        // Compute the penalty share per user
         const individualPenalty = penaltyAmount / totalUsers;
+        const affectedUserIds = users.map(user => user.id);
 
-        // Now proceed with database updates
         await Promise.all([
             Record.create({
                 memberId: id,
                 recordType: 'penalty',
                 recordSecondaryType: secondaryType,
                 recordAmount: penaltyAmount,
-                comment,
+                comment: `${comment} (${affectedUserIds.join(',')})`,
             }),
             figures.increment({
                 penalties: penaltyAmount,
@@ -238,13 +229,85 @@ export const addCreditPenalty = async (req, res) => {
             ...users.map(user => user.increment('initialInterest', { by: individualPenalty }))
         ]);
 
-        // Return success response only if all operations succeed
         res.status(200).json({
-            message: `${penaltyAmount.toLocaleString()} RWF penalty applied to ${currentUser.username} and distributed successfully.`
+            message: `${penaltyAmount.toLocaleString()} RWF penalty applied and distributed successfully.`
         });
-
     } catch (error) {
         console.error("Error applying penalty:", error);
-        res.status(500).json({ message: "Something went wrong. Please try again.", error: error.message });
+        res.status(500).json({ message: "Something went wrong.", error: error.message });
+    }
+};
+
+// Edit penalty record
+export const editCreditPenalty = async (req, res) => {
+    const { id, newPenaltyAmount } = req.body;
+
+    try {
+        const record = await Record.findByPk(id);
+        if (!record) return res.status(404).json({ error: "Penalty record not found." });
+
+        const oldAmount = Number(record.recordAmount);
+        const amountDifference = newPenaltyAmount - oldAmount;
+        const figures = await allFigures();
+        const users = await allUsers();
+
+        const affectedUserIds = record.comment.match(/\d+/g)?.map(Number) || [];
+        const activeUsers = users.filter(user => affectedUserIds.includes(user.id));
+        const totalMembers = activeUsers.length;
+
+        if (totalMembers === 0) return res.status(400).json({ error: "No affected users found." });
+
+        const adjustmentPerMember = amountDifference / totalMembers;
+
+        for (const user of activeUsers) {
+            user.initialInterest = Number(user.initialInterest) + Number(adjustmentPerMember);
+            await user.save();
+        }
+
+        await figures.increment('penalties', { by: amountDifference });
+        await figures.increment('balance', { by: amountDifference });
+        record.recordAmount = newPenaltyAmount;
+        await record.save();
+
+        res.status(200).json({ message: "Penalty record updated successfully." });
+    } catch (error) {
+        console.error("Error editing penalty:", error);
+        res.status(500).json({ message: "Something went wrong.", error: error.message });
+    }
+};
+
+// Delete penalty record
+export const deleteCreditPenalty = async (req, res) => {
+    const { id } = req.body;
+
+    try {
+        const record = await Record.findByPk(id);
+        if (!record) return res.status(404).json({ error: "Penalty record not found." });
+
+        const penaltyAmount = Number(record.recordAmount);
+        const figures = await allFigures();
+        const users = await allUsers();
+
+        const affectedUserIds = record.comment.match(/\d+/g)?.map(Number) || [];
+        const activeUsers = users.filter(user => affectedUserIds.includes(user.id));
+        const totalMembers = activeUsers.length;
+
+        if (totalMembers === 0) return res.status(400).json({ error: "No affected users found." });
+
+        const refundPerMember = penaltyAmount / totalMembers;
+
+        for (const user of activeUsers) {
+            user.initialInterest -= refundPerMember;
+            await user.save();
+        }
+
+        await figures.decrement('penalties', { by: penaltyAmount });
+        await figures.decrement('balance', { by: penaltyAmount });
+        await record.destroy();
+
+        res.status(200).json({ message: "Penalty record deleted and amounts reversed successfully." });
+    } catch (error) {
+        console.error("Error deleting penalty:", error);
+        res.status(500).json({ message: "Something went wrong.", error: error.message });
     }
 };
