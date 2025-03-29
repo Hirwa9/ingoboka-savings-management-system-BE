@@ -1,3 +1,4 @@
+import { where } from 'sequelize';
 import Loan from '../models/loan_model.js';
 import Record from '../models/record_model.js';
 import { allFigures } from './figures.js';
@@ -109,6 +110,62 @@ export const payLoan = async (req, res) => {
     } catch (error) {
         console.error('Error updating loan:', error);
         res.status(500).json({ message: 'Something went wrong', error: error.message });
+    }
+};
+
+// Delete Paid Loan
+export const deletePaidLoan = async (req, res) => {
+    const { recordId, memberId } = req.body;
+
+    try {
+        const record = await Record.findOne({ where: { id: recordId, memberId } });
+        const loan = await Loan.findOne({ where: { memberId } });
+        const figures = await allFigures();
+
+        if (!record) return res.status(404).json({ error: "Payment record not found." });
+        if (!loan) return res.status(404).json({ error: "Loan details not found." });
+        if (!figures) return res.status(404).json({ error: "Figures record not found." });
+
+        // Parse payment data
+        const oldData = JSON.parse(record.comment);
+        const oldLoanToPay = Number(oldData.loanPaid) || 0;
+        const oldInterestToPay = Number(oldData.interestPaid) || 0;
+        const oldTranchesToPay = Number(oldData.tranchesPaid) || 0;
+
+        // Check if the payment data exists
+        if (!oldLoanToPay && !oldInterestToPay && !oldTranchesToPay) {
+            return res.status(400).json({ error: "No payment data found." });
+        }
+
+        // Check if the payment can be reversed
+        if (Number(figures.balance) < (oldLoanToPay + oldInterestToPay)) {
+            return res.status(400).json({ error: "Insufficient balance to reverse payment." });
+        }
+
+        // Reverse loan effects
+        loan.loanPaid -= oldLoanToPay;
+        loan.loanPending += oldLoanToPay;
+        loan.interestPaid -= oldInterestToPay;
+        loan.interestPending += oldInterestToPay;
+        loan.tranchesPaid -= oldTranchesToPay;
+        loan.tranchesPending += oldTranchesToPay;
+
+        await loan.save();
+
+        // Reverse figures updates
+        await figures.increment({
+            balance: -(oldLoanToPay + oldInterestToPay),
+            paidInterest: -oldInterestToPay,
+            paidCapital: -oldLoanToPay
+        });
+
+        // Delete record
+        await record.destroy();
+
+        res.status(200).json({ message: "Loan payment deleted successfully." });
+    } catch (error) {
+        console.error("Error deleting loan payment:", error);
+        res.status(500).json({ message: "Something went wrong", error: error.message });
     }
 };
 
