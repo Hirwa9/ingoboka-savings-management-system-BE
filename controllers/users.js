@@ -496,7 +496,7 @@ export const ResetUserPassword = async (req, res) => {
     }
 };
 
-// Edit husband info
+// Edit husband's info
 export const editHusbandInfo = async (req, res) => {
     const { id } = req.params;
     const { role, username, husbandFirstName, husbandLastName, husbandPhone, husbandEmail } = req.body;
@@ -617,7 +617,7 @@ export const editShares = async (req, res) => {
     }
 };
 
-// Edit cotisation
+// Record cotisation
 export const recordAnnualSavings = async (req, res) => {
     const { id } = req.params;
     const { savings, applyDelayPenalties, comment } = req.body;
@@ -699,7 +699,7 @@ export const recordAnnualSavings = async (req, res) => {
     }
 };
 
-// Edit cotisation (delete)
+// Reverse/delete cotisation
 export const reverseAnnualSavings = async (req, res) => {
     const { id } = req.params;
     const { savings, comment, recordId } = req.body;
@@ -816,7 +816,7 @@ export const recordSocialSavings = async (req, res) => {
 // Record Social Saving
 export const editSocialSavings = async (req, res) => {
     const { id } = req.params;
-    const { recordId, savingAmount } = req.body;
+    const { recordId, newSavingAmount } = req.body;
 
     try {
         const user = await User.findByPk(id);
@@ -828,7 +828,7 @@ export const editSocialSavings = async (req, res) => {
         if (!record) return res.status(404).json({ error: "Record not found" });
 
         const oldAmount = Number(record.recordAmount); // Previous recorded amount
-        const newAmount = Number(savingAmount);
+        const newAmount = Number(newSavingAmount);
         const amountDifference = newAmount - oldAmount; // Difference between old and new amount
 
         // Adjust user's social amount based on the difference
