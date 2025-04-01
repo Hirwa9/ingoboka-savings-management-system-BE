@@ -336,10 +336,12 @@ export const RemoveMember = async (req, res) => {
 
         let responseMessage = "";
         let retainedBalance = 0;
+        let takeAwayBalance = 0;
 
         if (loan) {
-            if (totalContributions >= loan.loanPending) {
-                retainedBalance = totalContributions - loan.loanPending;
+            const pendingLoan = Number(loan.loanPending);
+            if (totalContributions >= pendingLoan) {
+                retainedBalance = totalContributions - pendingLoan;
 
                 await loan.update({
                     loanPending: 0,
@@ -349,7 +351,10 @@ export const RemoveMember = async (req, res) => {
                     tranchesPending: 0,
                     tranchesPaid: loan.tranchesTaken
                 });
-                await figures.increment('balance', { by: retainedBalance });
+
+                // Retain balance and then remove remaining balance from figures
+                await figures.increment('balance', { by: pendingLoan });
+                await figures.increment('balance', { by: -retainedBalance });
 
                 await user.update({
                     status: 'removed',
@@ -359,10 +364,10 @@ export const RemoveMember = async (req, res) => {
                     social: 0
                 });
 
-                responseMessage = `Member removed successfully. Loan settled. Retained ${retainedBalance.toLocaleString()} RWF in balance.`;
+                responseMessage = `Member removed successfully. Loan settled. Member withdrew remaining ${retainedBalance.toLocaleString()} RWF.`;
             } else {
                 await loan.update({
-                    loanPending: loan.loanPending - totalContributions,
+                    loanPending: pendingLoan - totalContributions,
                     loanPaid: loan.loanPaid + totalContributions
                 });
 
@@ -378,6 +383,9 @@ export const RemoveMember = async (req, res) => {
                 responseMessage = `Member set to inactive. Contributions of ${totalContributions.toLocaleString()} RWF used to settle loan.`;
             }
         } else {
+            // Directly remove the remaining balance since no loan is present
+            await figures.increment('balance', { by: -totalContributions });
+
             await user.update({
                 status: 'removed',
                 shares: 0,
@@ -386,7 +394,7 @@ export const RemoveMember = async (req, res) => {
                 social: 0
             });
 
-            responseMessage = "Member removed successfully. No pending loans found.";
+            responseMessage = `Member removed successfully. No pending loans found. Member withdrew ${totalContributions.toLocaleString()} RWF.`;
         }
 
         return res.status(200).json({ message: responseMessage });
