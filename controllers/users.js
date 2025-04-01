@@ -336,7 +336,6 @@ export const RemoveMember = async (req, res) => {
 
         let responseMessage = "";
         let retainedBalance = 0;
-        let takeAwayBalance = 0;
 
         if (loan) {
             const pendingLoan = Number(loan.loanPending);
