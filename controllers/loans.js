@@ -1,4 +1,3 @@
-import { where } from 'sequelize';
 import Loan from '../models/loan_model.js';
 import Record from '../models/record_model.js';
 import { allFigures } from './figures.js';
