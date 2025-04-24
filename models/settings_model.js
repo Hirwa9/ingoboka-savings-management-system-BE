@@ -43,7 +43,7 @@ const Settings = db.define('settings', {
             },
             expenses: {
                 types: [
-                    'Application expenses', 'Cheque Book', 'Leaving Members Interest',
+                    'Application expenses', 'Cheque Book', 'Leaving Member Interest',
                     'SMS Charge', 'Social', 'Withdraw fee'
                 ],
             },
