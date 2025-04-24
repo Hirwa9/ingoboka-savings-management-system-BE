@@ -2,6 +2,8 @@ import jwt from "jsonwebtoken";
 
 export const verifyToken = (req, res) => {
     const accessToken = req.cookies.accessToken;
+    const userType = req.query.userType;
+
     if (!accessToken) {
         return res.status(401).json({ message: "Access token missing" });
     }
@@ -10,6 +12,6 @@ export const verifyToken = (req, res) => {
         if (err) {
             return res.status(403).json({ message: "Invalid or expired token" });
         }
-        res.json({ user });
+        res.json({ user, userType });
     });
 };
